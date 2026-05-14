@@ -30,6 +30,8 @@ import {
   updateDoc,
   deleteDoc,
   getDocs,
+  setDoc,
+  limit,
   arrayUnion,
   arrayRemove 
 } from "firebase/firestore";
@@ -72,6 +74,8 @@ export default function App() {
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [customerInfo, setCustomerInfo] = useState({ name: "לקוח מס' 1290", orderId: "ORD-9821" });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   
   // Audio Refs
   const audioSent = useRef<HTMLAudioElement>(new Audio("https://www.myinstants.com/media/sounds/whatsapp_sent.mp3"));
