@@ -27,7 +27,8 @@ import {
   where,
   setDoc,
   doc,
-  deleteDoc
+  deleteDoc,
+  updateDoc
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { motion, AnimatePresence } from "motion/react";
@@ -53,6 +54,8 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
   const [newEmployee, setNewEmployee] = useState({ name: "", phone: "", power: "1" });
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState(0);
+  const [syncSuccess, setSyncSuccess] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<any>(null);
   
   const getCollectionPath = (name: string) => `artifacts/${specId}/public/data/${name}`;
 
@@ -67,12 +70,13 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
 
   const fileRef = React.useRef<HTMLInputElement>(null);
 
-  const handleWhatsAppSync = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDnaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsSyncing(true);
     setSyncProgress(0);
+    setSyncSuccess(false);
 
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -98,7 +102,8 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
           if (prog >= 100) {
             clearInterval(interval);
             setIsSyncing(false);
-            alert("סנכרון DNA הושלם: הסוכנת למדה את סגנון הדיבור החדש.");
+            setSyncSuccess(true);
+            setTimeout(() => setSyncSuccess(false), 5000);
           }
         }, 150);
       } catch (err) {
@@ -148,17 +153,31 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
   const handleCreateEmployee = async () => {
     if (!newEmployee.name || !newEmployee.phone) return;
     try {
-      await setDoc(doc(db, getCollectionPath("users"), newEmployee.phone), {
-        name: newEmployee.name,
-        powerLevel: parseInt(newEmployee.power),
-        createdAt: serverTimestamp(),
-        status: "offline"
-      });
+      if (editingEmployee) {
+        await updateDoc(doc(db, getCollectionPath("users"), editingEmployee.id), {
+          name: newEmployee.name,
+          powerLevel: parseInt(newEmployee.power),
+          updatedAt: serverTimestamp()
+        });
+        setEditingEmployee(null);
+      } else {
+        await setDoc(doc(db, getCollectionPath("users"), newEmployee.phone), {
+          name: newEmployee.name,
+          powerLevel: parseInt(newEmployee.power),
+          createdAt: serverTimestamp(),
+          status: "offline",
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${newEmployee.phone}`
+        });
+      }
       setNewEmployee({ name: "", phone: "", power: "1" });
-      alert("מורשה גישה נוסף בהצלחה");
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const startEdit = (emp: any) => {
+    setEditingEmployee(emp);
+    setNewEmployee({ name: emp.name, phone: emp.id, power: emp.powerLevel.toString() });
   };
 
   const handleDeleteEmployee = async (id: string) => {
@@ -344,8 +363,8 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                <div className="space-y-8 max-w-5xl">
                   <div className="bg-white p-10 rounded-[40px] border border-slate-200 shadow-xl">
                      <h3 className="text-xl font-black mb-8 flex items-center gap-3 text-[#1e293b]">
-                        <Plus size={24} className="text-[#C5A059]" />
-                        הוספת מורשה גישה
+                        {editingEmployee ? <Smartphone size={24} className="text-[#C5A059]" /> : <Plus size={24} className="text-[#C5A059]" />}
+                        {editingEmployee ? `עריכת מורשה: ${editingEmployee.name}` : "הוספת מורשה גישה"}
                      </h3>
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2">
@@ -361,8 +380,9 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                            <label className="text-[11px] font-black text-slate-400 uppercase">טלפון (מזהה)</label>
                            <input 
                               value={newEmployee.phone}
+                              disabled={!!editingEmployee}
                               onChange={e => setNewEmployee({...newEmployee, phone: e.target.value})}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-[#1e293b] focus:border-[#C5A059] outline-none font-mono"
+                              className={`w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-[#1e293b] focus:border-[#C5A059] outline-none font-mono ${editingEmployee ? 'opacity-50' : ''}`}
                               placeholder="05XXXXXXXX"
                            />
                         </div>
@@ -379,20 +399,30 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                            </select>
                         </div>
                      </div>
-                     <button 
-                        onClick={handleCreateEmployee}
-                        className="mt-8 bg-[#1e293b] text-white px-10 py-4 rounded-xl font-black hover:bg-slate-700 transition-all flex items-center gap-2"
-                     >
-                        <Save size={18} />
-                        שמירת מורשה גישה
-                     </button>
+                     <div className="flex gap-4 mt-8">
+                        <button 
+                           onClick={handleCreateEmployee}
+                           className="bg-[#1e293b] text-white px-10 py-4 rounded-xl font-black hover:bg-slate-700 transition-all flex items-center gap-2"
+                        >
+                           <Save size={18} />
+                           {editingEmployee ? "עדכון פרטים" : "שמירת מורשה גישה"}
+                        </button>
+                        {editingEmployee && (
+                           <button 
+                              onClick={() => { setEditingEmployee(null); setNewEmployee({ name: "", phone: "", power: "1" }); }}
+                              className="bg-slate-100 text-slate-500 px-10 py-4 rounded-xl font-black hover:bg-slate-200 transition-all"
+                           >
+                              ביטול
+                           </button>
+                        )}
+                     </div>
                   </div>
 
                   <div className="bg-white rounded-[40px] border border-slate-200 shadow-xl overflow-hidden">
                      <table className="w-full text-right">
                         <thead className="bg-slate-50">
                            <tr className="text-slate-400 text-[11px] font-black uppercase tracking-wider">
-                              <th className="p-6">שם המשתמש</th>
+                              <th className="p-6">משתמש</th>
                               <th className="p-6">טלפון / מזהה</th>
                               <th className="p-6">רמת סמכות</th>
                               <th className="p-6">סטטוס</th>
@@ -402,7 +432,12 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                         <tbody>
                            {employees.map((emp) => (
                               <tr key={emp.id} className="border-t border-slate-100 hover:bg-slate-50 transition-colors">
-                                 <td className="p-6 font-black text-[#1e293b]">{emp.name}</td>
+                                 <td className="p-6">
+                                    <div className="flex items-center gap-3">
+                                       <img src={emp.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${emp.id}`} className="w-10 h-10 rounded-full border border-slate-200 bg-slate-100" alt="" />
+                                       <span className="font-black text-[#1e293b]">{emp.name}</span>
+                                    </div>
+                                 </td>
                                  <td className="p-6 font-mono text-slate-500">{emp.id}</td>
                                  <td className="p-6">
                                     <span className={`px-4 py-1.5 rounded-full text-[10px] font-black border ${emp.powerLevel === 3 ? 'bg-red-50 text-red-600 border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
@@ -416,9 +451,14 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                                     </div>
                                  </td>
                                  <td className="p-6 text-center">
-                                    <button onClick={() => handleDeleteEmployee(emp.id)} className="text-slate-300 hover:text-red-500 transition-colors">
-                                       <Trash2 size={20} />
-                                    </button>
+                                    <div className="flex justify-center gap-3">
+                                       <button onClick={() => startEdit(emp)} className="text-slate-300 hover:text-[#C5A059] transition-colors">
+                                          <Smartphone size={20} />
+                                       </button>
+                                       <button onClick={() => handleDeleteEmployee(emp.id)} className="text-slate-300 hover:text-red-500 transition-colors">
+                                          <Trash2 size={20} />
+                                       </button>
+                                    </div>
                                  </td>
                               </tr>
                            ))}
@@ -430,58 +470,113 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
 
             {activeTab === "training" && (
                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                  <div className="bg-white p-10 rounded-[50px] border border-slate-200 shadow-xl flex flex-col items-center justify-center text-center space-y-6">
-                     <div className="w-24 h-24 bg-slate-50 rounded-[40px] flex items-center justify-center border border-slate-100 text-[#C5A059]">
-                        <Upload size={48} className={isSyncing ? "animate-bounce" : ""} />
-                     </div>
-                     <div>
-                        <h3 className="text-2xl font-black text-[#1e293b]">סנכרון היסטוריית WhatsApp</h3>
-                        <p className="text-slate-500 py-2">העלאת קובץ .txt לניתוח טון וסגנון דיבור.</p>
-                     </div>
-                     {isSyncing ? (
-                        <div className="w-full max-w-sm space-y-2">
-                           <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                              <motion.div animate={{ width: `${syncProgress}%` }} className="h-full bg-[#C5A059]" />
+                  {/* DNA Training Section */}
+                  <div className="space-y-8">
+                     <div className="bg-white p-10 rounded-[50px] border border-slate-200 shadow-xl flex flex-col items-center justify-center text-center space-y-6">
+                        <div className="w-24 h-24 bg-slate-50 rounded-[40px] flex items-center justify-center border border-slate-100 text-[#C5A059]">
+                           <Upload size={48} className={isSyncing ? "animate-bounce" : ""} />
+                        </div>
+                        <div>
+                           <h3 className="text-2xl font-black text-[#1e293b]">סנכרון היסטוריית WhatsApp</h3>
+                           <p className="text-slate-500 py-2">העלאת קובץ .txt לניתוח טון וסגנון דיבור.</p>
+                        </div>
+                        {isSyncing ? (
+                           <div className="w-full max-w-sm space-y-2">
+                              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                 <motion.div animate={{ width: `${syncProgress}%` }} className="h-full bg-[#C5A059]" />
+                              </div>
+                              <p className="text-[#C5A059] font-black text-[10px]">מנתח סנטימנט: {syncProgress}%</p>
                            </div>
-                           <p className="text-[#C5A059] font-black text-[10px]">מנתח סנטימנט: {syncProgress}%</p>
+                        ) : syncSuccess ? (
+                           <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl font-black flex items-center gap-3">
+                              <ShieldCheck size={24} />
+                              סנכרון DNA הושלם בהצלחה!
+                           </div>
+                        ) : (
+                           <div className="flex flex-col items-center gap-4">
+                              <input 
+                                 type="file" 
+                                 ref={fileRef} 
+                                 onChange={handleDnaUpload} 
+                                 accept=".txt" 
+                                 className="hidden" 
+                              />
+                              <button 
+                                 onClick={() => fileRef.current?.click()} 
+                                 className="bg-slate-100 hover:bg-slate-200 text-[#1e293b] px-10 py-5 rounded-2xl font-black transition-all flex items-center gap-3"
+                              >
+                                 <Upload size={20} />
+                                 העלאת קובץ (txt.)
+                              </button>
+                           </div>
+                        )}
+                     </div>
+
+                     <div className="bg-white p-10 rounded-[50px] border border-slate-200 shadow-xl">
+                        <h3 className="text-xl font-black text-[#1e293b] mb-6">הגדרות טון וסגנון (DNA)</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                           {[
+                              { key: "tone", val: "Formal/Professional", label: "פורמלי / מקצועי" },
+                              { key: "tone", val: "Brotherly/Warm", label: "חברי / 'אחי'" },
+                              { key: "tone", val: "Direct/Technical", label: "ישיר / טכני" },
+                              { key: "tone", val: "Urgent/Field-Style", label: "דחוף / שטח" }
+                           ].map((t, i) => (
+                              <button 
+                                 key={i} 
+                                 onClick={() => handleSaveDNA(t.key, t.val)}
+                                 className="p-5 bg-slate-50 border border-slate-100 rounded-2xl text-[#1e293b] font-bold hover:border-[#C5A059] transition-all"
+                              >
+                                 {t.label}
+                              </button>
+                           ))}
                         </div>
-                     ) : (
-                        <div className="flex flex-col items-center gap-4">
-                           <input 
-                              type="file" 
-                              ref={fileRef} 
-                              onChange={handleWhatsAppSync} 
-                              accept=".txt" 
-                              className="hidden" 
-                           />
-                           <button 
-                              onClick={() => fileRef.current?.click()} 
-                              className="bg-slate-100 hover:bg-slate-200 text-[#1e293b] px-10 py-5 rounded-2xl font-black transition-all flex items-center gap-3"
-                           >
-                              <Upload size={20} />
-                              העלאת קובץ (txt.)
-                           </button>
-                        </div>
-                     )}
+                     </div>
                   </div>
 
-                  <div className="bg-white p-10 rounded-[50px] border border-slate-200 shadow-xl">
-                     <h3 className="text-xl font-black text-[#1e293b] mb-6">הגדרות טון וסגנון (DNA)</h3>
-                     <div className="grid grid-cols-2 gap-4">
+                  {/* Performance Analytics Section */}
+                  <div className="bg-white p-10 rounded-[50px] border border-slate-200 shadow-xl space-y-8">
+                     <div className="flex items-center justify-between">
+                        <h3 className="text-2xl font-black text-[#1e293b]">Agent Performance Meter</h3>
+                        <div className="px-4 py-2 bg-[#C5A059]/10 rounded-xl text-[#C5A059] font-black text-xs uppercase tracking-widest">
+                           Live AI Status
+                        </div>
+                     </div>
+
+                     <div className="space-y-10">
                         {[
-                           { key: "tone", val: "Formal/Professional", label: "פורמלי / מקצועי" },
-                           { key: "tone", val: "Brotherly/Warm", label: "חברי / 'אחי'" },
-                           { key: "tone", val: "Direct/Technical", label: "ישיר / טכני" },
-                           { key: "tone", val: "Urgent/Field-Style", label: "דחוף / שטח" }
-                        ].map((t, i) => (
-                           <button 
-                              key={i} 
-                              onClick={() => handleSaveDNA(t.key, t.val)}
-                              className="p-5 bg-slate-50 border border-slate-100 rounded-2xl text-[#1e293b] font-bold hover:border-[#C5A059] transition-all"
-                           >
-                              {t.label}
-                           </button>
+                           { label: "Sales Influence %", val: 88, color: "#C5A059" },
+                           { label: "Technical Depth %", val: 94, color: "#1e293b" },
+                           { label: "Personality Match %", val: 76, color: "#10b981" }
+                        ].map((metric, i) => (
+                           <div key={metric.label} className="space-y-3">
+                              <div className="flex justify-between items-end">
+                                 <span className="font-black text-slate-500 uppercase text-xs">{metric.label}</span>
+                                 <span className="font-black text-2xl text-[#1e293b]">{metric.val}%</span>
+                              </div>
+                              <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
+                                 <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${metric.val}%` }}
+                                    transition={{ duration: 1.5, delay: i * 0.2 }}
+                                    className="h-full rounded-full"
+                                    style={{ backgroundColor: metric.color }}
+                                 />
+                              </div>
+                           </div>
                         ))}
+                     </div>
+
+                     <div className="pt-6 border-t border-slate-100">
+                        <div className="grid grid-cols-2 gap-4">
+                           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                              <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Total Training Clusters</p>
+                              <p className="text-xl font-black text-[#1e293b]">412</p>
+                           </div>
+                           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                              <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Knowledge Density</p>
+                              <p className="text-xl font-black text-[#1e293b]">High</p>
+                           </div>
+                        </div>
                      </div>
                   </div>
                </div>
