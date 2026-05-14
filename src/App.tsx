@@ -9,6 +9,7 @@ import {
   Send, 
   Paperclip, 
   Smile, 
+  Search,
   MoreVertical, 
   Phone, 
   Video, 
@@ -46,7 +47,7 @@ const APP_ID = "ai-studio-cc5d2687-b402-4b97-b402-4b97-b402-4b97-b402"; // Note:
 const SPEC_APP_ID = "ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e";
 const BRAND_GREEN = "#128C7E";
 const BRAND_DARK_GREEN = "#075E54";
-const NOA_AVATAR = "https://i.postimg.cc/qqWtk5qr/Gemini-Generated-Image-6z6qts6z6qts6z6q.png";
+const NOA_AVATAR = "https://i.postimg.cc/qqLm9M5t/Gemini-Generated-Image-gmd5k7gmd5k7gmd5.png";
 const DRIVE_API_KEY = process.env.GOOGLE_DRIVE_API_KEY || "";
 
 type Message = {
@@ -467,43 +468,46 @@ export default function App() {
       ) : (
         <>
           {/* Header */}
-          <header className="h-20 bg-[#075E54] text-white flex items-center px-6 justify-between shadow-lg z-10">
-            <div className="flex items-center gap-4">
-              <button onClick={() => setView("contacts")} className="md:hidden hover:bg-white/10 p-1 rounded-full">
-                <ChevronLeft size={24} />
-              </button>
-              <div className="relative cursor-pointer" onClick={() => {
-                // Secret Admin Toggle: Click avatar 5 times
-                let clicks = parseInt(sessionStorage.getItem("admin_clicks") || "0") + 1;
-                sessionStorage.setItem("admin_clicks", clicks.toString());
-                if (clicks >= 5) {
-                  setIsAdminUnlocked(true);
-                  alert("🔐 Admin Node Access Enabled");
-                }
-              }}>
-                <img 
-                  src={NOA_AVATAR} 
-                  alt="Noa" 
-                  className="w-12 h-12 rounded-full border-2 border-white/20 object-cover"
-                />
-                <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-[#075E54] rounded-full"></div>
+          <header className="h-16 bg-[#075E54] text-white flex items-center px-4 justify-between shadow-md z-20">
+            <div className="flex items-center gap-[10px]">
+              <div className="flex items-center gap-1 group">
+                <button onClick={() => setView("contacts")} className="md:hidden hover:bg-white/10 p-1 rounded-full">
+                  <ChevronLeft size={24} className="rotate-180" />
+                </button>
+                <div className="relative cursor-pointer" onClick={() => {
+                  let clicks = parseInt(sessionStorage.getItem("admin_clicks") || "0") + 1;
+                  sessionStorage.setItem("admin_clicks", clicks.toString());
+                  if (clicks >= 5) {
+                    setIsAdminUnlocked(true);
+                    alert("🔐 Admin Node Access Enabled");
+                  }
+                }}>
+                  <img 
+                    src={NOA_AVATAR} 
+                    alt="Noa" 
+                    className="w-10 h-10 rounded-full border border-white/40 object-cover"
+                  />
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#25D366] border border-[#075E54] rounded-full"></div>
+                </div>
               </div>
               <div onClick={() => setView("contacts")} className="cursor-pointer">
-                <h1 className="text-lg font-bold leading-tight">{customerInfo.name}</h1>
-                <p className="text-xs text-white/80">מחובר | הזמנה: {customerInfo.orderId}</p>
+                <h1 className="text-[16px] font-bold leading-tight">נועה - ח.סבן</h1>
+                <p className="text-[12px] text-white/80">מחוברת</p>
               </div>
             </div>
-            <div className="flex items-center gap-4 opacity-90">
+
+            <div className="flex items-center gap-5 opacity-90">
               {isAdminUnlocked && (
                 <button onClick={() => setView("admin")} className="hover:scale-110 transition-transform">
-                  <Shield size={22} className="text-yellow-400" />
+                  <Shield size={20} className="text-yellow-400" />
                 </button>
               )}
-              <Video size={22} className="cursor-pointer hover:text-gray-300" />
-              <Phone size={20} className="cursor-pointer hover:text-gray-300" />
+              <Video size={20} className="cursor-pointer" />
+              <Phone size={18} className="cursor-pointer" />
+              <Search size={18} className="cursor-pointer" />
               <div className="relative group">
-                <MoreVertical size={22} className="cursor-pointer" />
-                <div className="absolute left-0 top-full mt-2 w-40 bg-white text-black shadow-xl rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto z-20 overflow-hidden text-sm">
+                <MoreVertical size={20} className="cursor-pointer" />
+                <div className="absolute left-0 top-full mt-2 w-40 bg-white text-black shadow-xl rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto z-30 overflow-hidden text-sm">
                   <button 
                     onClick={clearChat}
                     className="w-full flex items-center gap-2 p-3 hover:bg-gray-100 text-red-600"
@@ -535,16 +539,16 @@ export default function App() {
                   key={msg.id}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className={`flex ${msg.sender === "user" ? "justify-start" : "justify-end"}`}
+                  className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div 
-                    className={`max-w-[85%] p-3 px-4 shadow-sm relative cursor-pointer
-                      ${msg.sender === "user" 
-                        ? "bg-white rounded-2xl rounded-tr-none" 
-                        : "bg-[#DCF8C6] rounded-2xl rounded-tl-none border border-[#c5e1af]"}`}
+                    className={`max-w-[85%] p-2 px-3 shadow-sm relative mb-2
+                      ${msg.sender === "noa" 
+                        ? "bg-[#DCF8C6] rounded-lg rounded-tl-none bubble-tail-left" 
+                        : "bg-white rounded-lg rounded-tr-none bubble-tail-right"}`}
                     onClick={() => setActiveReactionPicker(activeReactionPicker === msg.id ? null : msg.id)}
                   >
-                    <div className="markdown-body text-[14.5px] text-[#303030] leading-relaxed overflow-hidden">
+                    <div className="markdown-body text-[14.2px] text-[#111111] leading-relaxed overflow-hidden">
                       {msg.fileMetadata && (
                         <div className="mb-3">
                           {msg.fileMetadata.type.startsWith("image/") ? (
@@ -644,13 +648,13 @@ export default function App() {
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex justify-end"
+                className="flex justify-start"
               >
-                <div className="bg-[#DCF8C6] border border-[#c5e1af] rounded-2xl rounded-tl-none p-3 shadow-sm">
-                    <div className="flex gap-1.5">
-                      <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce"></div>
-                      <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                      <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                <div className="bg-[#DCF8C6] rounded-lg rounded-tl-none p-2 px-3 shadow-sm bubble-tail-left">
+                    <div className="flex gap-1.5 items-center h-5">
+                      <div className="w-1 bg-[#00a884] rounded-full h-1 animate-bounce"></div>
+                      <div className="w-1 bg-[#00a884] rounded-full h-1 animate-bounce [animation-delay:0.2s]"></div>
+                      <div className="w-1 bg-[#00a884] rounded-full h-1 animate-bounce [animation-delay:0.4s]"></div>
                     </div>
                 </div>
               </motion.div>
@@ -797,15 +801,25 @@ export default function App() {
           margin-bottom: 8px;
           position: relative;
         }
-        .timeline-dot {
+        .bubble-tail-right::before {
+          content: "";
           position: absolute;
-          right: -7px;
           top: 0;
-          width: 12px;
-          height: 12px;
-          background: #128C7E;
-          border-radius: 50%;
-          border: 2px solid white;
+          right: -8px;
+          width: 0;
+          height: 0;
+          border-left: 10px solid white;
+          border-bottom: 10px solid transparent;
+        }
+        .bubble-tail-left::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: -8px;
+          width: 0;
+          height: 0;
+          border-right: 10px solid #DCF8C6;
+          border-bottom: 10px solid transparent;
         }
       `}</style>
     </div>

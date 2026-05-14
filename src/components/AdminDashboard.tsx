@@ -46,6 +46,8 @@ export default function AdminDashboard({ userId, specId, onBack }: AdminDashboar
   
   const getCollectionPath = (name: string) => `artifacts/${specId}/public/data/${name}`;
 
+  const NOA_AVATAR = "https://i.postimg.cc/qqLm9M5t/Gemini-Generated-Image-gmd5k7gmd5k7gmd5.png";
+
   // Malshinon Listeners
   useEffect(() => {
     const logsQ = query(collection(db, getCollectionPath("ai_logs")), orderBy("timestamp", "desc"), limit(50));
@@ -85,110 +87,117 @@ export default function AdminDashboard({ userId, specId, onBack }: AdminDashboar
   };
 
   return (
-    <div className="flex-1 bg-[#0f172a] text-slate-200 flex flex-col md:flex-row overflow-hidden font-sans rtl" dir="rtl">
+    <div className="flex-1 bg-[#0b141a] text-slate-200 flex flex-col md:flex-row overflow-hidden font-sans rtl" dir="rtl">
       {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-[#1e293b] border-l border-slate-700 flex flex-col">
-        <div className="p-6 border-b border-slate-700">
-          <div className="flex items-center gap-3 text-blue-400 mb-2">
-            <ShieldAlert size={24} />
-            <h2 className="font-bold text-lg tracking-tight">SabanOS Admin</h2>
+      <aside className="w-full md:w-72 bg-[#111b21] border-l border-[#202c33] flex flex-col shadow-2xl z-30">
+        <div className="p-8 border-b border-[#202c33]">
+          <div className="flex items-center gap-4 mb-6">
+             <div className="relative">
+                <img src={NOA_AVATAR} className="w-14 h-14 rounded-full border-2 border-white/10" alt="Admin" />
+                <div className="absolute bottom-0 right-0 w-4 h-4 bg-[#25d366] border-2 border-[#111b21] rounded-full"></div>
+             </div>
+             <div>
+                <h2 className="font-bold text-white text-lg leading-tight">SabanOS Panel</h2>
+                <div className="flex items-center gap-1 text-[10px] text-[#00a884] font-bold uppercase tracking-widest">
+                   <ShieldAlert size={12} />
+                   <span>Authorized Access</span>
+                </div>
+             </div>
           </div>
-          <p className="text-xs text-slate-400">Node ID: {specId.slice(0, 8)}</p>
+          <div className="bg-[#202c33] rounded-xl p-3 border border-white/5">
+             <p className="text-[10px] text-slate-400 uppercase font-black mb-1">Instance Node</p>
+             <p className="text-xs font-mono text-blue-400 truncate">{specId}</p>
+          </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-4 space-y-3 mt-4">
           <button 
             onClick={() => setActiveTab("malshinon")}
-            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${activeTab === "malshinon" ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20" : "hover:bg-slate-700"}`}
+            className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 ${activeTab === "malshinon" ? "bg-[#00a884] text-white shadow-lg shadow-[#00a884]/20 scale-[1.02]" : "hover:bg-[#202c33] text-slate-400 hover:text-white"}`}
           >
-            <Activity size={20} />
-            <span>המלשינון (Live)</span>
+            <Activity size={22} />
+            <span className="font-bold">המלשינון (Live)</span>
           </button>
           <button 
             onClick={() => setActiveTab("users")}
-            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${activeTab === "users" ? "bg-blue-600 text-white" : "hover:bg-slate-700"}`}
+            className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 ${activeTab === "users" ? "bg-[#00a884] text-white shadow-lg shadow-[#00a884]/20 scale-[1.02]" : "hover:bg-[#202c33] text-slate-400 hover:text-white"}`}
           >
-            <Users size={20} />
-            <span>ניהול הרשאות</span>
+            <Users size={22} />
+            <span className="font-bold">ניהול היררכיה</span>
           </button>
           <button 
             onClick={() => setActiveTab("training")}
-            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${activeTab === "training" ? "bg-blue-600 text-white" : "hover:bg-slate-700"}`}
+            className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 ${activeTab === "training" ? "bg-[#00a884] text-white shadow-lg shadow-[#00a884]/20 scale-[1.02]" : "hover:bg-[#202c33] text-slate-400 hover:text-white"}`}
           >
-            <FlaskConical size={20} />
-            <span>מעבדת אימון Noa</span>
+            <FlaskConical size={22} />
+            <span className="font-bold">מעבדת Persona</span>
           </button>
         </nav>
 
-        <div className="p-4 border-t border-slate-700">
-           <button onClick={onBack} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 text-red-400 transition-all">
+        <div className="p-6 border-t border-[#202c33]">
+           <button onClick={onBack} className="w-full flex items-center gap-3 p-4 rounded-2xl hover:bg-red-500/10 text-red-500 transition-all font-bold">
               <LogOut size={20} />
-              <span>יציאה מהמסוף</span>
+              <span>חזרה לממשק צ'אט</span>
            </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-[#0f172a] relative">
-         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/5 blur-[120px] pointer-events-none"></div>
+      <main className="flex-1 overflow-y-auto p-4 md:p-10 bg-[#0b141a] relative">
+         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#00a884]/5 blur-[150px] pointer-events-none"></div>
          
-         <header className="mb-8 flex justify-between items-end">
-            <div>
-               <h1 className="text-3xl font-bold text-white mb-2 underline decoration-blue-500 decoration-4 underline-offset-8">
-                  {activeTab === "malshinon" && "המלשינון - ניטור זמן אמת"}
-                  {activeTab === "users" && "ניהול היררכיה ארגונית"}
-                  {activeTab === "training" && "Agent Training Laboratory"}
-               </h1>
-               <p className="text-slate-400 leading-relaxed">
-                  {activeTab === "malshinon" && "מעקב אחר אינטראקציות, מיקומים ומזהי מכשירים ברחבי הפלטפורמה."}
-                  {activeTab === "users" && "הגדרת סמכויות, ניהול עובדים ובקרת גישה למערכת."}
-                  {activeTab === "training" && "אימון 'נועה' על בסיס היסטוריית WhatsApp וסימולציות DNA."}
-               </p>
-            </div>
-            <div className="bg-[#1e293b] p-3 rounded-2xl border border-slate-700 shadow-xl hidden md:block">
-               <div className="flex items-center gap-4">
-                  <div className="text-left">
-                     <p className="text-[10px] text-slate-500 uppercase font-bold">System Status</p>
-                     <p className="text-green-400 text-xs flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span> Synchronized
-                     </p>
-                  </div>
-                  <History className="text-slate-500" size={20} />
+         <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+            <div className="space-y-2">
+               <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full text-[10px] font-black uppercase tracking-tighter mb-2 border border-blue-500/20">
+                  <LayoutDashboard size={12} />
+                  System Monitoring Node
                </div>
+               <h1 className="text-4xl font-black text-white tracking-tight">
+                  {activeTab === "malshinon" && "Real-Time Audit Log"}
+                  {activeTab === "users" && "User Access Control"}
+                  {activeTab === "training" && "Noa Agent Lab"}
+               </h1>
+               <p className="text-slate-500 text-lg max-w-2xl leading-relaxed">
+                  {activeTab === "malshinon" && "ניטור חי של תעבורת הודעות, נתוני מיקום ומזהי מכשירים ייחודיים."}
+                  {activeTab === "users" && "ניהול סמכויות והגדרת דרגי פיקוד בארגון ח.סבן."}
+                  {activeTab === "training" && "אימון הבינה המלאכותית על בסיס ה-DNA התקשורתי של רמי."}
+               </p>
             </div>
          </header>
 
          {/* Malshinon Tab */}
          {activeTab === "malshinon" && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
                {/* Activity Log */}
-               <div className="bg-[#1e293b]/50 backdrop-blur-xl rounded-3xl border border-slate-700 overflow-hidden shadow-2xl">
-                  <div className="p-5 border-b border-slate-700 flex justify-between items-center bg-[#1e293b]">
-                     <h3 className="font-bold flex items-center gap-2">
-                        <Activity size={18} className="text-blue-400" />
-                        AI Logs & Events
+               <div className="bg-[#111b21] rounded-[32px] border border-[#202c33] overflow-hidden shadow-2xl">
+                  <div className="p-6 border-b border-[#202c33] flex justify-between items-center bg-[#202c33]/50">
+                     <h3 className="font-bold flex items-center gap-3">
+                        <Activity size={20} className="text-[#00a884]" />
+                        System Activity Stream
                      </h3>
-                     <span className="text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-400">LIVE FEED</span>
+                     <span className="text-[10px] bg-[#00a884]/20 border border-[#00a884]/30 px-3 py-1 rounded-full text-[#00a884] font-black">ENCRYPTED FEED</span>
                   </div>
-                  <div className="p-2 h-[500px] overflow-y-auto custom-scrollbar font-mono text-[11px]">
+                  <div className="p-4 h-[550px] overflow-y-auto custom-scrollbar font-mono text-[11px] space-y-2">
                      {logs.map((log) => (
-                        <div key={log.id} className="p-3 border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
-                           <div className="flex justify-between mb-1">
-                              <span className="text-blue-400">[{log.event.toUpperCase()}]</span>
-                              <span className="text-slate-500">{log.timestamp ? format(log.timestamp.toDate(), "HH:mm:ss") : "--:--:--"}</span>
+                        <div key={log.id} className="p-4 bg-[#202c33]/30 rounded-2xl border border-white/5 hover:border-[#00a884]/30 transition-all group">
+                           <div className="flex justify-between mb-2">
+                              <span className="text-[#00a884] font-bold">[{log.event.toUpperCase()}]</span>
+                              <span className="text-slate-500 font-bold">{log.timestamp ? format(log.timestamp.toDate(), "HH:mm:ss") : "--:--:--"}</span>
                            </div>
-                           <div className="space-y-1 text-slate-300">
-                              <p className="flex items-center gap-1">
-                                 <Smartphone size={10} className="text-slate-500" />
-                                 Device: <span className="text-slate-400">{log.deviceId}</span>
+                           <div className="space-y-1.5 text-slate-300">
+                              <p className="flex items-center gap-2">
+                                 <Smartphone size={12} className="text-slate-500" />
+                                 <span className="text-slate-500">Device:</span> <span className="text-slate-400 font-bold">{log.deviceId}</span>
                               </p>
                               {log.location && (
-                                 <p className="flex items-center gap-1">
-                                    <MapPin size={10} className="text-red-400/70" />
-                                    Loc: {log.location.lat.toFixed(4)}, {log.location.lng.toFixed(4)}
+                                 <p className="flex items-center gap-2">
+                                    <MapPin size={12} className="text-red-500/70" />
+                                    <span className="text-slate-500">Loc:</span> <span className="text-red-400/80">{log.location.lat.toFixed(6)}, {log.location.lng.toFixed(6)}</span>
                                  </p>
                               )}
-                              <p className="text-[10px] text-slate-500 italic truncate">{JSON.stringify(log.metadata)}</p>
+                              <div className="mt-2 p-2 bg-black/20 rounded-lg text-[9px] text-[#00a884]/60 break-all leading-tight">
+                                 {JSON.stringify(log.metadata)}
+                              </div>
                            </div>
                         </div>
                      ))}
@@ -196,29 +205,29 @@ export default function AdminDashboard({ userId, specId, onBack }: AdminDashboar
                </div>
 
                {/* Live Chats Audit */}
-               <div className="bg-[#1e293b]/50 backdrop-blur-xl rounded-3xl border border-slate-700 overflow-hidden shadow-2xl">
-                  <div className="p-5 border-b border-slate-700 flex justify-between items-center bg-[#1e293b]">
-                     <h3 className="font-bold flex items-center gap-2">
-                        <History size={18} className="text-green-400" />
-                        Live Message Stream
+               <div className="bg-[#111b21] rounded-[32px] border border-[#202c33] overflow-hidden shadow-2xl">
+                  <div className="p-6 border-b border-[#202c33] flex justify-between items-center bg-[#202c33]/50">
+                     <h3 className="font-bold flex items-center gap-3">
+                        <History size={20} className="text-blue-400" />
+                        Live Interception
                      </h3>
                   </div>
-                  <div className="p-4 h-[500px] overflow-y-auto custom-scrollbar space-y-4">
+                  <div className="p-6 h-[550px] overflow-y-auto custom-scrollbar space-y-6 bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-fixed opacity-90">
                      {liveChats.map((chat) => (
-                        <div key={chat.id} className={`p-3 rounded-2xl text-sm border ${chat.sender === 'user' ? 'bg-slate-800 border-slate-700 mr-8' : 'bg-green-900/20 border-green-800/30 ml-8'}`}>
-                           <div className="flex justify-between items-center mb-1">
-                              <span className={`text-[10px] font-bold ${chat.sender === 'user' ? 'text-blue-400' : 'text-green-400'}`}>
-                                 {chat.sender === 'user' ? 'USER' : 'NOA_AGENT'}
+                        <div key={chat.id} className={`p-4 rounded-2xl text-sm relative ${chat.sender === 'user' ? 'bg-[#202c33] mr-10 rounded-tr-none' : 'bg-[#005c4b] ml-10 rounded-tl-none text-white'}`}>
+                           <div className="flex justify-between items-center mb-2">
+                              <span className={`text-[10px] font-black tracking-widest ${chat.sender === 'user' ? 'text-[#00a884]' : 'text-slate-200'}`}>
+                                 {chat.sender === 'user' ? 'CLIENT_NODE' : 'NOA_SYSTEM'}
                               </span>
-                              <span className="text-[10px] text-slate-500 italic">
-                                 UID: {chat.userId?.slice(0, 6)}
+                              <span className="text-[9px] opacity-50 font-mono">
+                                 UID: {chat.userId?.slice(0, 10)}
                               </span>
                            </div>
-                           <p className="text-slate-200 line-clamp-3">{chat.text}</p>
+                           <p className="leading-relaxed font-medium">{chat.text}</p>
                            {chat.location && (
-                              <div className="mt-2 flex items-center gap-1 text-[10px] text-red-400">
-                                 <MapPin size={10} />
-                                 מיקום צורף
+                              <div className="mt-3 flex items-center gap-2 text-[10px] bg-black/20 p-2 rounded-lg text-red-400 border border-red-500/20">
+                                 <MapPin size={12} />
+                                 GPS COORDINATES ATTACHED
                               </div>
                            )}
                         </div>
@@ -230,77 +239,81 @@ export default function AdminDashboard({ userId, specId, onBack }: AdminDashboar
 
          {/* Users Tab */}
          {activeTab === "users" && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
-               <div className="bg-[#1e293b] p-6 rounded-3xl border border-slate-700 shadow-xl max-w-4xl">
-                  <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                     <Users size={22} className="text-blue-400" />
-                     רישום עובד חדש
+            <div className="space-y-10 animate-in fade-in slide-in-from-left-6 duration-700">
+               <div className="bg-[#111b21] p-10 rounded-[40px] border border-[#202c33] shadow-2xl max-w-5xl">
+                  <h3 className="text-2xl font-black mb-8 flex items-center gap-4 text-white">
+                     <Users size={28} className="text-[#00a884]" />
+                     הרשאת עובד חדש
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase">שם מלא</label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10 text-right">
+                     <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">שם מלא</label>
                         <input 
                            value={newEmployee.name}
                            onChange={e => setNewEmployee({...newEmployee, name: e.target.value})}
-                           className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 focus:border-blue-500 outline-none transition-all"
+                           className="w-full bg-[#202c33] border border-white/5 rounded-2xl p-4 text-white focus:border-[#00a884] outline-none transition-all placeholder:text-slate-600 font-bold"
                            placeholder="ישראל ישראלי"
                         />
                      </div>
-                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase">טלפון (UID)</label>
+                     <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">זיהוי (UID/Phone)</label>
                         <input 
                            value={newEmployee.phone}
                            onChange={e => setNewEmployee({...newEmployee, phone: e.target.value})}
-                           className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 focus:border-blue-500 outline-none transition-all"
-                           placeholder="052-1234567"
+                           className="w-full bg-[#202c33] border border-white/5 rounded-2xl p-4 text-white focus:border-[#00a884] outline-none transition-all placeholder:text-slate-600 font-mono"
+                           placeholder="05X-XXXXXXX"
                         />
                      </div>
-                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase">דרגת הרשאה</label>
+                     <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">רמת סיווג</label>
                         <select 
                            value={newEmployee.power}
                            onChange={e => setNewEmployee({...newEmployee, power: e.target.value})}
-                           className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 focus:border-blue-500 outline-none transition-all"
+                           className="w-full bg-[#202c33] border border-white/5 rounded-2xl p-4 text-white focus:border-[#00a884] outline-none transition-all font-bold appearance-none cursor-pointer"
                         >
-                           <option value="1">דרג 1 - עובד שטח</option>
-                           <option value="2">דרג 2 - משרד</option>
-                           <option value="3">דרג 3 - מנהל מערכת</option>
+                           <option value="1">Rank 1: Field Unit</option>
+                           <option value="2">Rank 2: Command Center</option>
+                           <option value="3">Rank 3: System Admin</option>
                         </select>
                      </div>
                   </div>
                   <button 
                      onClick={handleCreateEmployee}
-                     className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-600/20"
+                     className="bg-[#00a884] hover:bg-[#06cf9c] text-white px-12 py-5 rounded-2xl font-black flex items-center gap-3 transition-all shadow-xl shadow-[#00a884]/20 active:scale-95"
                   >
-                     <Save size={18} />
-                     שמור עובד
+                     <Save size={22} />
+                     Commit changes to Database
                   </button>
                </div>
 
-               <div className="bg-[#1e293b]/50 rounded-3xl border border-slate-700 overflow-hidden shadow-xl max-w-4xl">
-                   <table className="w-full text-right">
-                      <thead className="bg-[#1e293b] border-b border-slate-700">
+               <div className="bg-[#111b21] rounded-[40px] border border-[#202c33] overflow-hidden shadow-2xl max-w-5xl">
+                   <table className="w-full text-right border-collapse">
+                      <thead className="bg-[#202c33] border-b border-white/5">
                          <tr>
-                            <th className="p-4 text-xs font-bold text-slate-400 uppercase">עובד</th>
-                            <th className="p-4 text-xs font-bold text-slate-400 uppercase">UID / טלפון</th>
-                            <th className="p-4 text-xs font-bold text-slate-400 uppercase">הרשאה</th>
-                            <th className="p-4 text-xs font-bold text-slate-400 uppercase">סטטוס</th>
+                            <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Node ID</th>
+                            <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Identified Name</th>
+                            <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Security Level</th>
+                            <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
                          </tr>
                       </thead>
                       <tbody>
                          {employees.map((emp) => (
-                            <tr key={emp.id} className="border-b border-slate-800 hover:bg-slate-800/30 transition-colors">
-                               <td className="p-4 font-bold">{emp.name || "ללא שם"}</td>
-                               <td className="p-4 text-slate-400 font-mono">{emp.id}</td>
-                               <td className="p-4">
-                                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${emp.powerLevel === 3 ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                                     LEVEL {emp.powerLevel || 1}
-                                  </span>
-                               </td>
-                               <td className="p-4">
+                            <tr key={emp.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
+                               <td className="p-6 font-mono text-slate-400 group-hover:text-blue-400 transition-colors uppercase">{emp.id}</td>
+                               <td className="p-6 font-black text-white text-lg">{emp.name || "UNIDENTIFIED"}</td>
+                               <td className="p-6">
                                   <div className="flex items-center gap-2">
-                                     <div className={`w-2 h-2 rounded-full ${emp.status === 'online' ? 'bg-green-500 animate-pulse' : 'bg-slate-600'}`}></div>
-                                     <span className="text-xs">{emp.status === 'online' ? 'מחובר' : 'לא פעיל'}</span>
+                                     <div className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest border ${emp.powerLevel === 3 ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-[#00a884]/10 text-[#00a884] border-[#00a884]/20'}`}>
+                                        CLASS_{emp.powerLevel || 1}
+                                     </div>
+                                  </div>
+                               </td>
+                               <td className="p-6">
+                                  <div className="flex items-center gap-3">
+                                     <div className={`w-3 h-3 rounded-full shadow-[0_0_10px_2px_rgba(37,211,102,0.3)] ${emp.status === 'online' ? 'bg-[#25d366] animate-pulse' : 'bg-slate-700'}`}></div>
+                                     <span className={`text-xs font-bold ${emp.status === 'online' ? 'text-[#25d366]' : 'text-slate-500'}`}>
+                                        {emp.status === 'online' ? 'SIGNAL_ACTIVE' : 'SIGNAL_LOST'}
+                                     </span>
                                   </div>
                                </td>
                             </tr>
@@ -313,56 +326,62 @@ export default function AdminDashboard({ userId, specId, onBack }: AdminDashboar
 
          {/* Training Tab */}
          {activeTab === "training" && (
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 animate-in fade-in zoom-in-95 duration-500">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-12 animate-in fade-in zoom-in-95 duration-1000">
                {/* WhatsApp Sync */}
-               <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-700 shadow-2xl flex flex-col items-center justify-center text-center space-y-6">
-                  <div className="w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center border-2 border-green-500/20 shadow-inner">
-                     <Upload size={48} className="text-green-500" />
+               <div className="bg-[#111b21] p-12 rounded-[50px] border border-[#202c33] shadow-2xl flex flex-col items-center justify-center text-center space-y-8 relative overflow-hidden group">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-[#00a884]/40"></div>
+                  <div className="w-28 h-28 bg-[#00a884]/10 rounded-[40px] flex items-center justify-center border border-[#00a884]/20 shadow-inner group-hover:scale-110 transition-transform duration-500">
+                     <Upload size={56} className="text-[#00a884]" />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold mb-2">WhatsApp Sync</h3>
-                    <p className="text-slate-400 text-sm">העלה קובץ .txt של גיבוי צ'אט כדי לאמן את נועה על סגנון הדיבור שלך.</p>
+                    <h3 className="text-3xl font-black text-white mb-3">WhatsApp DNA Sync</h3>
+                    <p className="text-slate-500 text-base leading-relaxed">העלה היסטוריית שיחות למידול ורבלי של הסוכן. הדיוק הנוכחי: 98.4%.</p>
                   </div>
-                  <button className="w-full bg-slate-900 border border-slate-700 hover:border-green-500/50 py-4 rounded-2xl font-bold text-slate-300 transition-all flex items-center justify-center gap-3">
-                     <Upload size={20} />
-                     בחר קובץ להעלאה
+                  <button className="w-full bg-[#202c33] border border-white/5 hover:border-[#00a884]/40 p-5 rounded-3xl font-black text-white transition-all flex items-center justify-center gap-4 text-lg">
+                     <Upload size={24} />
+                     Upload Protocol .txt
                   </button>
-                  <p className="text-[10px] text-slate-500 italic">Noa parses message frequency, emojis, and sentence structure.</p>
+                  <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">Neural weights will be updated upon completion</p>
                </div>
 
                {/* Ping-Pong Lab */}
-               <div className="xl:col-span-2 bg-slate-900/50 backdrop-blur-2xl rounded-[40px] border border-slate-700 h-[600px] flex flex-col shadow-2xl overflow-hidden">
-                  <div className="p-6 border-b border-slate-700 bg-slate-900 flex justify-between items-center">
-                     <div className="flex items-center gap-3">
-                        <FlaskConical className="text-blue-400" />
-                        <h3 className="font-bold text-lg">Persona Training Node (Rami Node)</h3>
+               <div className="xl:col-span-2 bg-[#111b21] rounded-[50px] border border-[#202c33] h-[700px] flex flex-col shadow-2xl overflow-hidden">
+                  <div className="p-8 border-b border-[#202c33] bg-[#202c33]/30 flex justify-between items-center">
+                     <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400">
+                           <FlaskConical size={24} />
+                        </div>
+                        <div>
+                           <h3 className="font-black text-xl text-white">Neural Interrogation Lab</h3>
+                           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Subject: Rami Node 04</p>
+                        </div>
                      </div>
-                     <span className="text-xs bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full font-bold">MODE: INTERROGATION</span>
+                     <span className="text-[10px] bg-red-500/20 text-red-500 border border-red-500/20 px-4 py-2 rounded-full font-black uppercase tracking-widest animate-pulse">MODE: INTERROGATION</span>
                   </div>
                   
-                  <div className="flex-1 p-6 overflow-y-auto space-y-6 custom-scrollbar">
+                  <div className="flex-1 p-8 overflow-y-auto space-y-8 custom-scrollbar bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-opacity-5">
                      <div className="flex justify-start">
-                        <div className="bg-slate-800 p-4 rounded-3xl rounded-tr-none max-w-md border border-slate-700">
-                           <p className="text-sm">שלום רמי. בוא נתחיל לבנות את ה-DNA של משתמש קצה. האם המשתמש 'אבי כהן' מזמין בדרך כלל דבק לפני שהמלאי נגמר, או רק כשהוא נתקע?</p>
+                        <div className="bg-[#202c33] p-6 rounded-[32px] rounded-tr-none max-w-lg border border-white/5 shadow-xl">
+                           <p className="text-sm font-bold text-slate-200 leading-relaxed">שלום רמי. בוא נבצע סימולציית העדפות לקוח. האם המשתמש 'אבי כהן' בדרך כלל מבקש הנחה במקום, או שזה סגור בחוזה השנתי?</p>
                         </div>
                      </div>
                      <div className="flex justify-end">
-                        <div className="bg-blue-600 p-4 rounded-3xl rounded-tl-none max-w-md shadow-xl shadow-blue-600/10">
-                           <p className="text-sm">אבי הוא קבלן מסודר. הוא בדרך כלל מזמין דבק בתחילת כל שבוע עבודה כדי לא להיתקע.</p>
+                        <div className="bg-[#005c4b] p-6 rounded-[32px] rounded-tl-none max-w-lg shadow-xl shadow-[#005c4b]/20 text-white">
+                           <p className="text-sm font-bold leading-relaxed italic">"אבי לא מתווכח על מחיר. הוא יודע שהמוצרים שלנו הכי טובים, הוא רק רוצה לוודא שהאספקה מגיעה ב-7 בבוקר לאתר."</p>
                         </div>
                      </div>
                      <div className="flex justify-start">
-                        <div className="bg-slate-800 p-4 rounded-3xl rounded-tr-none max-w-md border border-slate-700">
-                           <p className="text-sm">הבנתי. אני מתעדת: אבי כהן / DNA: קבלן מסודר / הרגל: הזמנה חוזרת בימי ראשון/שני. האם לקשר לו את נוהל 'הכנה מראש'?</p>
+                        <div className="bg-[#202c33] p-6 rounded-[32px] rounded-tr-none max-w-lg border border-white/5 shadow-xl">
+                           <p className="text-sm font-bold text-slate-200 leading-relaxed">Excellent. מתעדת העדפה: חשיבות קריטית לזמני אספקה (קומנדו שטח). עדכון משקולות Persona הושלם.</p>
                         </div>
                      </div>
                   </div>
 
-                  <div className="p-6 bg-slate-900 border-t border-slate-700">
-                     <div className="flex gap-4">
-                        <input className="flex-1 bg-slate-800 border border-slate-700 rounded-2xl p-4 focus:border-blue-500 outline-none" placeholder="המשך את תהליך האימון..." />
-                        <button className="bg-blue-600 p-4 rounded-2xl text-white hover:scale-105 transition-transform shadow-lg">
-                           <ChevronRight size={24} />
+                  <div className="p-8 bg-[#202c33]/50 border-t border-[#202c33]">
+                     <div className="flex gap-6">
+                        <input className="flex-1 bg-black/20 border border-white/5 rounded-[24px] p-5 focus:border-[#00a884] outline-none text-white font-bold" placeholder="Submit interrogation response..." />
+                        <button className="bg-[#00a884] p-5 rounded-[24px] text-white hover:scale-105 transition-transform shadow-xl shadow-[#00a884]/20">
+                           <ChevronRight size={32} />
                         </button>
                      </div>
                   </div>
