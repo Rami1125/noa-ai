@@ -16,6 +16,7 @@ import {
   Check, 
   CheckCheck,
   Trash2,
+  Share2,
   ChevronLeft,
   Shield
 } from "lucide-react";
@@ -328,8 +329,9 @@ export default function App() {
         location
       });
 
-      // Log to AI Logs and Bridge Sessions
-      logInteraction("file_upload", { fileName: file.name, fileSize: file.size });
+      // Log to AI Logs
+      logInteraction("file_upload", { fileName: file.name, fileSize: file.size, fileType: file.type });
+      
       await addDoc(collection(db, getCollectionPath("bridge_sessions")), {
         type: "attachment",
         userId,
@@ -339,6 +341,7 @@ export default function App() {
 
       setIsTyping(true);
       const noaText = await getNoaResponse([{ text: `העליתי קובץ בשם ${file.name}`, sender: "user" }]);
+      
       await addDoc(collection(db, chatPath), {
         text: noaText,
         sender: "noa",
@@ -346,6 +349,8 @@ export default function App() {
         timestamp: serverTimestamp(),
         status: "delivered",
       });
+      
+      logInteraction("ai_response", { text: noaText, trigger: "file_upload" });
       
       audioReceived.current.play().catch(() => {});
       setIsTyping(false);
@@ -373,18 +378,20 @@ export default function App() {
       });
       
       audioSent.current.play().catch(() => {});
+      
       if (location) {
         audioLocation.current.play().catch(() => {});
         logInteraction("location_sent", { coords: location });
       }
-      logInteraction("message_sent", { textLength: userMsg.length });
+      
+      logInteraction("message_sent", { text: userMsg });
 
       setIsTyping(true);
       
-      // Fetch Multi-Collection Context (Knowledge Base Sync)
+      // Fetch Multi-Collection Context (Knowledge Base Sync for Habitat Profiling)
       const [ordersSnap, salesSnap, inventorySnap, customerSnap] = await Promise.all([
-        getDocs(query(collection(db, getCollectionPath("orders")), orderBy("timestamp", "desc"), limit(5))),
-        getDocs(query(collection(db, getCollectionPath("sales")), orderBy("timestamp", "desc"), limit(10))),
+        getDocs(query(collection(db, getCollectionPath("orders")), orderBy("timestamp", "desc"), limit(10))),
+        getDocs(query(collection(db, getCollectionPath("sales")), orderBy("timestamp", "desc"), limit(15))),
         getDocs(collection(db, getCollectionPath("inventory"))),
         getDocs(query(collection(db, getCollectionPath("customers")), limit(1)))
       ]);
@@ -394,9 +401,10 @@ export default function App() {
         sales: salesSnap.docs.map(d => ({ id: d.id, ...d.data() })),
         inventory: inventorySnap.docs.map(d => ({ id: d.id, ...d.data() })),
         customerProfile: customerSnap.docs[0]?.data() || customerInfo,
-        userProfile: userProfile, // PASSING DNA
+        userProfile: userProfile, 
         deviceId,
-        location
+        location,
+        timestamp: new Date().toISOString()
       };
       
       const history = messages.map(m => ({ text: m.text, sender: m.sender }));
@@ -411,7 +419,11 @@ export default function App() {
         timestamp: serverTimestamp(),
         status: "delivered",
       });
+
+      // Audit Log Sync: Log the AI Response
+      logInteraction("ai_response", { text: noaText, promptType: "query" });
       
+      audioReceived.current.play().catch(() => {});
       setIsTyping(false);
     } catch (error) {
       console.error("Error sending message:", error);
@@ -569,6 +581,16 @@ export default function App() {
                 <MoreVertical size={20} className="cursor-pointer" />
                 <div className="absolute left-0 top-full mt-2 w-40 bg-white text-black shadow-xl rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto z-30 overflow-hidden text-sm">
                   <button 
+                    onClick={() => {
+                      const text = encodeURIComponent(`היי, תראו את מערכת הניהול של ח.סבן: ${window.location.href}`);
+                      window.open(`https://wa.me/?text=${text}`, "_blank");
+                    }}
+                    className="w-full flex items-center gap-2 p-3 hover:bg-gray-100 text-green-600 border-b border-gray-100"
+                  >
+                    <Share2 size={18} />
+                    שתף את האפליקציה
+                  </button>
+                  <button 
                     onClick={clearChat}
                     className="w-full flex items-center gap-2 p-3 hover:bg-gray-100 text-red-600"
                   >
@@ -579,6 +601,7 @@ export default function App() {
                     onClick={() => setView("contacts")}
                     className="w-full flex items-center gap-2 p-3 hover:bg-gray-100 border-t border-gray-100"
                   >
+                    <ChevronLeft size={18} className="rotate-180" />
                     אנשי קשר
                   </button>
                 </div>
@@ -587,114 +610,101 @@ export default function App() {
           </header>
 
           {/* Chat Area */}
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 scroll-smooth relative custom-scrollbar">
+          <main className="flex-1 overflow-y-auto p-2 md:p-4 space-y-6 scroll-smooth relative custom-scrollbar bg-opacity-95">
             {/* Date bubble */}
             <div className="flex justify-center mb-6">
-               <span className="bg-[#DDF4FF] text-[#558199] text-[11px] px-3 py-1 rounded-lg shadow-sm font-medium">היום</span>
+               <span className="bg-[#DDF4FF] text-[#558199] text-[11px] px-3 py-1 rounded-lg shadow-sm font-black uppercase tracking-widest">היום</span>
             </div>
 
             <AnimatePresence>
               {messages.map((msg) => (
                 <motion.div
                   key={msg.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
                   className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div 
-                    className={`max-w-[85%] p-2 px-3 shadow-sm relative mb-2
+                    className={`p-0.5 shadow-sm relative mb-4 transition-all
                       ${msg.sender === "noa" 
-                        ? "bg-[#DCF8C6] rounded-lg rounded-tl-none bubble-tail-left" 
-                        : "bg-white rounded-lg rounded-tr-none bubble-tail-right"}`}
+                        ? "bg-[#DCF8C6] rounded-2xl rounded-tl-none bubble-tail-left w-full max-w-[98%]" 
+                        : "bg-white rounded-2xl rounded-tr-none bubble-tail-right max-w-[85%] px-3 py-2"}`}
                     onClick={() => setActiveReactionPicker(activeReactionPicker === msg.id ? null : msg.id)}
                   >
-                    <div className="markdown-body text-[14.2px] text-[#111111] leading-relaxed overflow-hidden">
+                    <div className={`markdown-body text-[16px] text-[#111111] leading-relaxed overflow-hidden ${msg.sender === "noa" ? "p-0" : "p-1"}`}>
                       {msg.fileMetadata && (
-                        <div className="mb-1">
+                        <div className="mb-2">
                           {msg.fileMetadata.type.startsWith("image/") ? (
-                            <div className="relative group">
+                            <div className="relative group overflow-hidden rounded-xl">
                               <img 
                                 src={msg.fileMetadata.previewUrl || "https://via.placeholder.com/400x200?text=" + msg.fileMetadata.name}
                                 alt={msg.fileMetadata.name}
-                                className="w-full max-w-sm rounded-lg shadow-sm border border-black/5 hover:brightness-95 transition-all cursor-zoom-in"
+                                className="w-full max-w-full rounded-xl shadow-sm border border-black/5 hover:scale-105 transition-transform cursor-zoom-in"
                               />
                             </div>
                           ) : (
-                            <div className="flex items-center gap-3 p-3 bg-black/5 rounded-xl border border-black/5 shadow-inner mb-2">
-                               <div className="p-2 bg-red-50 text-red-500 rounded-lg">
-                                  <Paperclip size={20} />
+                            <div className="flex items-center gap-3 p-4 bg-black/5 rounded-2xl border border-black/5 shadow-inner mb-2">
+                               <div className="p-3 bg-red-50 text-red-500 rounded-xl shadow-sm">
+                                  <Paperclip size={24} />
                                </div>
                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-bold truncate">{msg.fileMetadata.name}</p>
-                                  <p className="text-[10px] text-gray-500">{(msg.fileMetadata.size / 1024).toFixed(1)} KB • Document</p>
+                                  <p className="text-base font-black truncate">{msg.fileMetadata.name}</p>
+                                  <p className="text-xs text-gray-500 font-bold">{(msg.fileMetadata.size / 1024).toFixed(1)} KB • Document Protocol</p>
                                </div>
                             </div>
                           )}
                         </div>
                       )}
-                      <ReactMarkdown rehypePlugins={[rehypeRaw]}>
-                        {msg.text}
-                      </ReactMarkdown>
+                      <div className={msg.sender === "noa" ? "noa-active-canvas" : ""}>
+                        <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+                          {msg.text}
+                        </ReactMarkdown>
+                      </div>
                     </div>
                     
-                    <div className="flex items-center justify-end gap-1 mt-1">
-                      <span 
-                        className="text-[10px] text-gray-400 capitalize cursor-help"
-                        title={msg.timestamp ? format(msg.timestamp.toDate(), "dd/MM/yyyy HH:mm:ss") : ""}
-                      >
-                        {msg.timestamp ? format(msg.timestamp.toDate(), "HH:mm") : ""}
-                      </span>
-                      {msg.sender === "user" && (
-                        <span className="text-gray-400">
-                          {msg.status === "seen" ? (
-                            <CheckCheck size={14} className="text-blue-500" />
-                          ) : msg.status === "delivered" ? (
-                            <CheckCheck size={14} />
-                          ) : (
-                            <Check size={14} />
-                          )}
+                    <div className={`flex items-center justify-between gap-4 mt-2 px-3 pb-2 text-[11px] ${msg.sender === "noa" ? "bg-black/5 py-2 rounded-b-2xl -mx-0.5 -mb-0.5" : ""}`}>
+                      <div className="flex items-center gap-2">
+                        <span 
+                          className="text-gray-500 font-black tracking-tighter"
+                          title={msg.timestamp ? format(msg.timestamp.toDate(), "dd/MM/yyyy HH:mm:ss") : ""}
+                        >
+                          {msg.timestamp ? format(msg.timestamp.toDate(), "HH:mm") : ""}
                         </span>
-                      )}
+                        {msg.sender === "user" && (
+                          <span className="text-gray-400">
+                            {msg.status === "seen" ? (
+                              <CheckCheck size={16} className="text-blue-500" />
+                            ) : msg.status === "delivered" ? (
+                              <CheckCheck size={16} />
+                            ) : (
+                              <Check size={16} />
+                            )}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const text = encodeURIComponent(`Shared from Noa Connect: ${msg.text}`);
+                            window.open(`https://wa.me/?text=${text}`, "_blank");
+                          }}
+                          className="text-gray-400 hover:text-[#00a884] transition-colors"
+                          title="שיתוף לווצאפ"
+                        >
+                          <Share2 size={14} />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Reaction Display */}
                     {msg.reactions && msg.reactions.length > 0 && (
-                      <div className="absolute -bottom-3 right-2 flex items-center bg-white border border-gray-100 rounded-full px-1.5 py-0.5 shadow-sm space-x-0.5 z-10">
+                      <div className="absolute -bottom-4 right-4 flex items-center bg-white border border-gray-100 rounded-full px-2 py-1 shadow-md space-x-1 z-10 scale-90 origin-right">
                         {msg.reactions.map((emoji, idx) => (
-                          <span key={idx} className="text-[12px]">{emoji}</span>
+                          <span key={idx} className="text-[14px]">{emoji}</span>
                         ))}
                       </div>
                     )}
-
-                    {/* Reaction Picker Overlay */}
-                    <AnimatePresence>
-                      {activeReactionPicker === msg.id && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                          className="absolute -top-12 right-0 bg-white border border-gray-200 rounded-full p-1.5 shadow-xl z-50 flex gap-2"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {REACTION_EMOJIS.map((emoji) => (
-                            <button
-                              key={emoji}
-                              onClick={() => handleReaction(msg.id, emoji)}
-                              className={`hover:scale-125 transition-transform p-1 rounded-full ${msg.reactions?.includes(emoji) ? "bg-gray-100" : ""}`}
-                            >
-                              {emoji}
-                            </button>
-                          ))}
-                          <div className="w-px h-6 bg-gray-200 mx-1"></div>
-                          <button
-                            onClick={() => setDeletingMessageId(msg.id)}
-                            className="text-red-500 hover:bg-red-50 p-1 rounded-full px-2"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
                   </div>
                 </motion.div>
               ))}
@@ -857,6 +867,25 @@ export default function App() {
           margin-bottom: 8px;
           position: relative;
         }
+        .noa-active-canvas {
+          font-family: 'Assistant', 'Heebo', sans-serif;
+          width: 100%;
+        }
+        .noa-active-canvas b {
+          color: inherit;
+          font-weight: 900;
+        }
+        .noa-active-canvas table {
+          margin: 0;
+          border-radius: 0;
+          border: none;
+          background: transparent;
+        }
+        .noa-active-canvas .card {
+          margin: 0;
+          width: 100%;
+        }
+        
         .bubble-tail-right::before {
           content: "";
           position: absolute;
