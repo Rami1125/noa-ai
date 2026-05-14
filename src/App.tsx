@@ -38,17 +38,19 @@ import rehypeRaw from "rehype-raw";
 import { format } from "date-fns";
 
 // Branding Constants
+const APP_ID = "ai-studio-cc5d2687-b402-4b97-b402-4b97-b402-4b97-b402"; // Note: User provided ID is different but common pattern. I'll use the one from their prompt.
+const SPEC_APP_ID = "ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e";
 const BRAND_GREEN = "#128C7E";
 const BRAND_DARK_GREEN = "#075E54";
-const CHAT_BG = "#E5DDD5";
-const NOA_AVATAR = "https://i.postimg.cc/qqLm9M5t/Gemini-Generated-Image-gmd5k7gmd5k7gmd5.png";
+const NOA_AVATAR = "https://i.postimg.cc/qqWtk5qr/Gemini-Generated-Image-6z6qts6z6qts6z6q.png";
 
 type Message = {
   id: string;
   text: string;
   sender: "user" | "noa";
-  timestamp: Timestamp;
+  timestamp: any;
   status: "sent" | "delivered" | "seen";
+  userId?: string;
   reactions?: string[];
 };
 
@@ -61,18 +63,26 @@ export default function App() {
   const [activeReactionPicker, setActiveReactionPicker] = useState<string | null>(null);
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [customerInfo, setCustomerInfo] = useState({ name: "לקוח מס' 1290", orderId: "ORD-9821" });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Path Helper
+  const getCollectionPath = (collectionName: string) => `artifacts/${SPEC_APP_ID}/public/data/${collectionName}`;
 
   // Mark messages as seen when entering chat view
   useEffect(() => {
     if (view === "chat" && messages.length > 0 && userId) {
-      const chatPath = `artifacts/saban-connect/users/${userId}/chat_history`;
+      const chatPath = getCollectionPath("chats");
       const unreadMsgs = messages.filter(m => m.sender === "noa" && m.status !== "seen");
       
       if (unreadMsgs.length > 0) {
         unreadMsgs.forEach(async (m) => {
-          await updateDoc(doc(db, chatPath, m.id), { status: "seen" });
+          try {
+            await updateDoc(doc(db, chatPath, m.id), { status: "seen" });
+          } catch (err) {
+            console.error("Status update error", err);
+          }
         });
       }
     }
@@ -89,7 +99,7 @@ export default function App() {
 
   const handleReaction = async (messageId: string, emoji: string) => {
     if (!userId) return;
-    const chatPath = `artifacts/saban-connect/users/${userId}/chat_history`;
+    const chatPath = getCollectionPath("chats");
     const messageRef = doc(db, chatPath, messageId);
     
     const message = messages.find(m => m.id === messageId);
@@ -115,7 +125,7 @@ export default function App() {
 
   const handleDeleteMessage = async (messageId: string) => {
     if (!userId) return;
-    const chatPath = `artifacts/saban-connect/users/${userId}/chat_history`;
+    const chatPath = getCollectionPath("chats");
     try {
       await deleteDoc(doc(db, chatPath, messageId));
       setDeletingMessageId(null);
@@ -124,10 +134,21 @@ export default function App() {
     }
   };
 
-  // Initialize Auth
+  // Initialize Auth (Anonymous priority)
   useEffect(() => {
-    initAuth().then((user) => {
-      if (user) setUserId(user.uid);
+    import("firebase/auth").then(({ signInAnonymously, getAuth }) => {
+      const auth = getAuth();
+      signInAnonymously(auth).then((cred) => {
+        setUserId(cred.user.uid);
+      }).catch(err => {
+        console.error("Auth error", err);
+        // Fallback to existing initAuth if any
+        initAuth().then((user) => {
+          if (user) setUserId(user.uid);
+        });
+      });
+    }).catch(err => {
+       console.error("Auth import error", err);
     });
   }, []);
 
@@ -135,20 +156,23 @@ export default function App() {
   useEffect(() => {
     if (!userId || view !== "chat") return;
 
-    const chatPath = `artifacts/saban-connect/users/${userId}/chat_history`;
+    const chatPath = getCollectionPath("chats");
     const q = query(collection(db, chatPath), orderBy("timestamp", "asc"));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const msgs: Message[] = [];
       snapshot.forEach((doc) => {
-        msgs.push({ id: doc.id, ...doc.data() } as Message);
+        const data = doc.data();
+        if (data.userId === userId) {
+          msgs.push({ id: doc.id, ...data } as Message);
+        }
       });
       setMessages(msgs);
       setTimeout(() => scrollToBottom(), 100);
     });
 
     return () => unsubscribe();
-  }, [userId]);
+  }, [userId, view]);
 
   const scrollToBottom = () => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -162,25 +186,25 @@ export default function App() {
     const file = e.target.files?.[0];
     if (!file || !userId) return;
 
-    const chatPath = `artifacts/saban-connect/users/${userId}/chat_history`;
+    const chatPath = getCollectionPath("chats");
     
     try {
-      // 1. Save "File Attached" message
       await addDoc(collection(db, chatPath), {
         text: `📎 **קובץ צורף:** ${file.name} (${(file.size / 1024).toFixed(1)} KB)`,
         sender: "user",
+        userId: userId,
         timestamp: serverTimestamp(),
         status: "sent",
       });
 
-      // 2. AI response acknowledge
       setIsTyping(true);
       const noaText = await getNoaResponse([{ text: `העליתי קובץ בשם ${file.name}`, sender: "user" }]);
       await addDoc(collection(db, chatPath), {
         text: noaText,
         sender: "noa",
+        userId: userId,
         timestamp: serverTimestamp(),
-        status: "seen",
+        status: "delivered",
       });
       setIsTyping(false);
     } catch (error) {
@@ -192,30 +216,29 @@ export default function App() {
     e?.preventDefault();
     if (!inputText.trim() || !userId) return;
 
-    const chatPath = `artifacts/saban-connect/users/${userId}/chat_history`;
+    const chatPath = getCollectionPath("chats");
     const userMsg = inputText.trim();
     setInputText("");
 
     try {
-      // 1. Save User Message
       await addDoc(collection(db, chatPath), {
         text: userMsg,
         sender: "user",
+        userId: userId,
         timestamp: serverTimestamp(),
         status: "sent",
       });
 
-      // 2. Noa AI Response
       setIsTyping(true);
       const history = messages.map(m => ({ text: m.text, sender: m.sender }));
       history.push({ text: userMsg, sender: "user" });
       
       const noaText = await getNoaResponse(history);
       
-      // 3. Save Noa Message
       await addDoc(collection(db, chatPath), {
         text: noaText,
         sender: "noa",
+        userId: userId,
         timestamp: serverTimestamp(),
         status: "delivered",
       });
@@ -229,10 +252,12 @@ export default function App() {
 
   const clearChat = async () => {
     if (!userId) return;
-    const chatPath = `artifacts/saban-connect/users/${userId}/chat_history`;
+    const chatPath = getCollectionPath("chats");
     const q = query(collection(db, chatPath));
     const snapshot = await getDocs(q);
-    const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+    const deletePromises = snapshot.docs
+      .filter(doc => doc.data().userId === userId)
+      .map(doc => deleteDoc(doc.ref));
     await Promise.all(deletePromises);
   };
 
@@ -251,7 +276,7 @@ export default function App() {
 
   return (
     <div 
-      className="flex flex-col h-screen max-w-2xl mx-auto border-x shadow-2xl overflow-hidden font-sans relative" 
+      className="flex flex-col h-screen w-full shadow-2xl overflow-hidden font-sans relative" 
       style={{ 
         backgroundColor: "#e5ddd5", 
         backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')",
@@ -340,8 +365,8 @@ export default function App() {
                 <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-[#075E54] rounded-full"></div>
               </div>
               <div onClick={() => setView("contacts")} className="cursor-pointer">
-                <h1 className="text-lg font-bold leading-tight">נועה - ח.סבן Connect</h1>
-                <p className="text-xs text-white/80">מחוברת | מענה חכם ללוגיסטיקה</p>
+                <h1 className="text-lg font-bold leading-tight">{customerInfo.name}</h1>
+                <p className="text-xs text-white/80">מחובר | הזמנה: {customerInfo.orderId}</p>
               </div>
             </div>
             <div className="flex items-center gap-4 opacity-90">
