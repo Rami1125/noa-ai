@@ -52,10 +52,19 @@ ${JSON.stringify(context.userProfile)}
 ---
 ` : "";
 
+    const dnaContext = context?.dnaTraining ? `
+---
+SABAN-PEDIA (DNA TRAINING BASELINE):
+מסמך זה מכיל דוגמאות של סגנון דיבור, סלנג מקצועי (Saban Slang) וטון מועדף משיחות קודמות.
+השתמשי במידע זה כדי לעצב את התגובה שלך כך שתתאים בדיוק ל-DNA של ח.סבן:
+${context.dnaTraining.substring(0, 10000)}
+---
+` : "";
+
     const contextInfo = context ? `
 ---
 LOGISTICS & SYSTEM CONTEXT:
-${JSON.stringify({ ...context, userProfile: undefined })}
+${JSON.stringify({ ...context, userProfile: undefined, dnaTraining: undefined })}
 ---
 ` : "";
 
@@ -66,7 +75,7 @@ ${JSON.stringify({ ...context, userProfile: undefined })}
         parts: [{ text: h.text }]
       })),
       config: {
-        systemInstruction: SYSTEM_PROMPT + userDna + contextInfo + `\nCRITICAL UI CONSTRAINT: Ensure font-size is 18px or larger in your HTML. All clickable elements must have a minimum target size of 56px. OUTPUT RAW HTML STRING ONLY. NO MARKDOWN.`,
+        systemInstruction: SYSTEM_PROMPT + userDna + dnaContext + contextInfo + `\nCRITICAL UI CONSTRAINT: Ensure font-size is 18px or larger in your HTML. All clickable elements must have a minimum target size of 56px. OUTPUT RAW HTML STRING ONLY. NO MARKDOWN.`,
       },
     });
 

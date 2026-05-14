@@ -144,14 +144,16 @@ export default function App() {
       logInteraction("message_sent", { text });
 
       setIsTyping(true);
-      const [orders, sales] = await Promise.all([
+      const [orders, sales, dnaLogs] = await Promise.all([
         getDocs(query(collection(db, getCollectionPath("orders")), orderBy("timestamp", "desc"), limit(5))),
-        getDocs(query(collection(db, getCollectionPath("sales")), orderBy("timestamp", "desc"), limit(5)))
+        getDocs(query(collection(db, getCollectionPath("sales")), orderBy("timestamp", "desc"), limit(5))),
+        getDocs(query(collection(db, getCollectionPath("ai_logs")), where("type", "==", "dna_training"), orderBy("timestamp", "desc"), limit(1)))
       ]);
 
       const context = {
         orders: orders.docs.map(d => d.data()),
         sales: sales.docs.map(d => d.data()),
+        dnaTraining: dnaLogs.docs.length > 0 ? dnaLogs.docs[0].data().content : null,
         deviceId,
         location
       };
@@ -203,11 +205,13 @@ export default function App() {
               </div>
             </div>
             <div className="flex items-center gap-6">
-              {isAdminUnlocked && (
-                <button onClick={() => setView("admin")} className="text-[#C5A059] hover:scale-110 transition-transform">
-                  <Shield size={24} />
-                </button>
-              )}
+              <button 
+                onClick={() => setView("admin")} 
+                className="text-[#C5A059] hover:scale-110 transition-transform p-2 hover:bg-white/5 rounded-xl"
+                title="כספת ניהול"
+              >
+                <Shield size={24} />
+              </button>
               <Video size={20} className="text-white/60 hidden md:block" />
               <Phone size={18} className="text-white/60 hidden md:block" />
               <MoreVertical size={20} className="text-white/60" />

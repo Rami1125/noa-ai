@@ -65,18 +65,49 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
     }
   };
 
-  const handleWhatsAppSync = () => {
+  const fileRef = React.useRef<HTMLInputElement>(null);
+
+  const handleWhatsAppSync = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
     setIsSyncing(true);
-    let prog = 0;
-    const interval = setInterval(() => {
-      prog += 5;
-      setSyncProgress(prog);
-      if (prog >= 100) {
-        clearInterval(interval);
+    setSyncProgress(0);
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const content = event.target?.result as string;
+      if (!content) return;
+
+      try {
+        // Log the DNA training data
+        await addDoc(collection(db, getCollectionPath("ai_logs")), {
+          event: "dna_training",
+          type: "dna_training",
+          content: content.substring(0, 50000), // Limit to avoid massive docs
+          filename: file.name,
+          deviceId: localStorage.getItem("deviceId") || "admin",
+          timestamp: serverTimestamp()
+        });
+
+        // Simulate processing progress
+        let prog = 0;
+        const interval = setInterval(() => {
+          prog += 10;
+          setSyncProgress(prog);
+          if (prog >= 100) {
+            clearInterval(interval);
+            setIsSyncing(false);
+            alert("סנכרון DNA הושלם: הסוכנת למדה את סגנון הדיבור החדש.");
+          }
+        }, 150);
+      } catch (err) {
+        console.error(err);
         setIsSyncing(false);
-        alert("עדכון DNA הושלם: משקולות סגנון וטון עודכנו בשרת.");
+        alert("שגיאה בסנכרון ה-DNA");
       }
-    }, 100);
+    };
+    reader.readAsText(file);
   };
 
   const handleSaveDNA = async (trait: string, value: string) => {
@@ -415,10 +446,22 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                            <p className="text-[#C5A059] font-black text-[10px]">מנתח סנטימנט: {syncProgress}%</p>
                         </div>
                      ) : (
-                        <button onClick={handleWhatsAppSync} className="bg-slate-100 hover:bg-slate-200 text-[#1e293b] px-10 py-5 rounded-2xl font-black transition-all flex items-center gap-3">
-                           <Upload size={20} />
-                           העלאת קובץ (txt.)
-                        </button>
+                        <div className="flex flex-col items-center gap-4">
+                           <input 
+                              type="file" 
+                              ref={fileRef} 
+                              onChange={handleWhatsAppSync} 
+                              accept=".txt" 
+                              className="hidden" 
+                           />
+                           <button 
+                              onClick={() => fileRef.current?.click()} 
+                              className="bg-slate-100 hover:bg-slate-200 text-[#1e293b] px-10 py-5 rounded-2xl font-black transition-all flex items-center gap-3"
+                           >
+                              <Upload size={20} />
+                              העלאת קובץ (txt.)
+                           </button>
+                        </div>
                      )}
                   </div>
 
