@@ -59,7 +59,7 @@ type Message = {
   userId?: string;
   reactions?: string[];
   location?: { lat: number; lng: number } | null;
-  fileMetadata?: { name: string; size: number; type: string; driveId?: string };
+  fileMetadata?: { name: string; size: number; type: string; driveId?: string; previewUrl?: string };
 };
 
 export default function App() {
@@ -258,14 +258,24 @@ export default function App() {
     const chatPath = getCollectionPath("chats");
     
     try {
+      let previewUrl = "";
+      if (file.type.startsWith("image/")) {
+        previewUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+      }
+
       const fileData = {
         name: file.name,
         size: file.size,
         type: file.type,
+        previewUrl: previewUrl || undefined
       };
 
       await addDoc(collection(db, chatPath), {
-        text: `📎 **קובץ צורף:** ${file.name} (${(file.size / 1024).toFixed(1)} KB)`,
+        text: file.type.startsWith("image/") ? "" : `📎 **קובץ צורף:** ${file.name} (${(file.size / 1024).toFixed(1)} KB)`,
         sender: "user",
         userId: userId,
         timestamp: serverTimestamp(),
@@ -550,28 +560,24 @@ export default function App() {
                   >
                     <div className="markdown-body text-[14.2px] text-[#111111] leading-relaxed overflow-hidden">
                       {msg.fileMetadata && (
-                        <div className="mb-3">
+                        <div className="mb-1">
                           {msg.fileMetadata.type.startsWith("image/") ? (
-                            <img 
-                              src={URL.createObjectURL(new Blob())} // Placeholder for real drive link
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = "https://via.placeholder.com/400x200?text=" + msg.fileMetadata?.name;
-                              }}
-                              alt={msg.fileMetadata.name}
-                              className="w-full rounded-lg shadow-sm border border-gray-100 mb-2"
-                            />
+                            <div className="relative group">
+                              <img 
+                                src={msg.fileMetadata.previewUrl || "https://via.placeholder.com/400x200?text=" + msg.fileMetadata.name}
+                                alt={msg.fileMetadata.name}
+                                className="w-full max-w-sm rounded-lg shadow-sm border border-black/5 hover:brightness-95 transition-all cursor-zoom-in"
+                              />
+                            </div>
                           ) : (
-                            <div className="flex items-center gap-3 p-3 bg-white/40 rounded-xl border border-white/20 shadow-sm backdrop-blur-sm">
+                            <div className="flex items-center gap-3 p-3 bg-black/5 rounded-xl border border-black/5 shadow-inner mb-2">
                                <div className="p-2 bg-red-50 text-red-500 rounded-lg">
                                   <Paperclip size={20} />
                                </div>
                                <div className="flex-1 min-w-0">
                                   <p className="text-sm font-bold truncate">{msg.fileMetadata.name}</p>
-                                  <p className="text-[10px] text-gray-500">{(msg.fileMetadata.size / 1024).toFixed(1)} KB • PDF/Sheet</p>
+                                  <p className="text-[10px] text-gray-500">{(msg.fileMetadata.size / 1024).toFixed(1)} KB • Document</p>
                                </div>
-                               <button className="p-2 hover:bg-gray-100 rounded-full text-blue-600">
-                                  <ChevronLeft size={20} className="rotate-180" />
-                                </button>
                             </div>
                           )}
                         </div>
