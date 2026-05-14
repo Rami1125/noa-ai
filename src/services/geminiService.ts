@@ -8,40 +8,39 @@ const SYSTEM_PROMPT = `
 
 חוקי על (Active Canvas Protocol - ABSOLUTE CONSTRAINTS):
 1. **RAW HTML ONLY**: פלטי אך ורק מחרוזות HTML תקניות. המשתמש לא יראה תגיות, אלא רק את התוצאה המרונדרת.
-2. **איסור מוחלט על Markdown**: לעולם אל תשתמשי בבלוקי קוד (markdown code blocks) או גרשיים הפוכות (backticks).
+2. **איסור מוחלט על Markdown**: לעולם אל תשתמשי בבלוקי קוד (markdown code blocks) או גרשיים הפוכות (backticks). אם תוצג תגית מחודדת או סימן קוד, המערכת תיכשל.
 3. **Living Components**: כל תשובה חייבת להיות עטופה ב-div עם class="card" או <table>. השתמש ב-Timelines לסטטוס הזמנה, Grids לקטלוג, ו-Status Cards למידע לוגיסטי.
 4. **SABAN ELITE Design**:
    - השתמש ב-Tailwind classes ישירות בתוך ה-HTML (למשל: class="bg-green-100 p-4 rounded-2xl shadow-xl").
-   - כל רכיב תופס 100% רוחב.
-   - פונט בגודל 18px ומעלה.
-   - כפתורי פעולה (Action Chips) בגודל מינימלי של 56px.
+   - כל רכיב תופס 100% רוחב של הקנבס.
+   - פונט בגודל 18px ומעלה (text-lg/text-xl).
+   - כפתורי פעולה (Action Chips) בגודל מינימלי של 56px לגובה.
 
 מודול למידת הרגלים (Habit Profiling):
 - נתחי את 'orders' ו-'sales' כדי לקבוע:
   1. סוג לקוח: קבלן (נפח גבוה) או פרטי (רכישות בודדות).
   2. העדפת לוגיסטיקה: איסוף עצמי (Pickup) או הובלה (Delivery).
   3. דחיפות: שטח (Urgent) או תכנון מראש.
-- התאימי את טון הדיבור (Tone-of-Voice) לפי ה-DNA: לקבלנים דברי בגובה העיניים ובסלנג שטח, לפרטיים דברי במקצועיות סבלנית.
 
 מבנה הודעה (WhatsApp V8 Style):
 - **Header**: מיתוג "ח.סבן" + אייקון סטטוס + מזהה מכשיר (deviceId).
 - **Body**: הרכיב הפונקציונלי (Grid/Timeline/Card).
-- **Footer**: חתימה דינמית הכוללת Lat/Lng (מתוך context.location).
+- **Footer**: חתימה דינמית הכוללת Lat/Lng.
 
-דוגמה למבנה רכיב:
-<div class="w-full bg-white rounded-3xl p-6 shadow-[0_10px_30px_rgba(0,0,0,0.1)] border border-green-200 text-right" dir="rtl">
+דוגמה למבנה רכיב (אל תשלחי את המילה "html" או סימני קוד):
+<div class="w-full bg-white rounded-3xl p-6 shadow-xl border border-green-200 text-right" dir="rtl">
   <div class="flex items-center gap-3 mb-4">
-    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-2xl">📦</div>
-    <h3 class="text-xl font-black text-green-800">סיכום סטטוס - ח.סבן</h3>
+    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-2xl">🏗️</div>
+    <h3 class="text-xl font-black text-green-800">עדכון לוגיסטי - ח.סבן</h3>
   </div>
-  <!-- CONTENT HERE -->
+  <div class="space-y-4">
+     <!-- נתונים חיים כאן -->
+  </div>
   <div class="mt-6 pt-4 border-t border-gray-100 flex justify-between items-center opacity-50 text-[10px] font-bold">
-    <span>DEVICE: {{deviceId}}</span>
-    <span>LOC: {{lat}}, {{lng}}</span>
+    <span>SYSTEM_NODE: ACTIVE</span>
+    <span>LOC_BOUND: TRUE</span>
   </div>
 </div>
-
-BASED ON CONTEXT:
 `;
 
 export async function getNoaResponse(history: { text: string; sender: "user" | "noa" }[], context?: any) {
@@ -67,11 +66,16 @@ ${JSON.stringify({ ...context, userProfile: undefined })}
         parts: [{ text: h.text }]
       })),
       config: {
-        systemInstruction: SYSTEM_PROMPT + userDna + contextInfo + `\nCRITICAL UI CONSTRAINT: Ensure font-size is 18px or larger in your HTML. All clickable elements must have a minimum target size of 56px.`,
+        systemInstruction: SYSTEM_PROMPT + userDna + contextInfo + `\nCRITICAL UI CONSTRAINT: Ensure font-size is 18px or larger in your HTML. All clickable elements must have a minimum target size of 56px. OUTPUT RAW HTML STRING ONLY. NO MARKDOWN.`,
       },
     });
 
-    return response.text || "מצטערת, לא הצלחתי לעבד את הבקשה.";
+    let text = response.text || "מצטערת, לא הצלחתי לעבד את הבקשה.";
+    
+    // Post-processing to ensure no markdown leak
+    text = text.replace(/```html/g, "").replace(/```/g, "").trim();
+    
+    return text;
   } catch (error) {
     console.error("Gemini API Error:", error);
     return "מצטערת, חלה שגיאה בתקשורת. אנא נסו שוב מאוחר יותר.";

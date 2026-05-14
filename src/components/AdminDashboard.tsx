@@ -54,7 +54,7 @@ export default function AdminDashboard({ userId, specId, onBack, locationAlertAc
 
   const handleVaultLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (vaultPassword.toLowerCase() === "rami2026") {
+    if (vaultPassword.toLowerCase() === "saban2026") {
       setIsVaultLocked(false);
     } else {
       alert("ACCESS DENIED: Credentials Invalid");

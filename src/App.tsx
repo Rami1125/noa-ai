@@ -655,11 +655,16 @@ export default function App() {
                           )}
                         </div>
                       )}
-                      <div className={msg.sender === "noa" ? "noa-active-canvas" : ""}>
+                      {msg.sender === "noa" ? (
+                        <div 
+                          className="noa-active-canvas text-[18px]"
+                          dangerouslySetInnerHTML={{ __html: msg.text }}
+                        />
+                      ) : (
                         <ReactMarkdown rehypePlugins={[rehypeRaw]}>
                           {msg.text}
                         </ReactMarkdown>
-                      </div>
+                      )}
                     </div>
                     
                     <div className={`flex items-center justify-between gap-4 mt-2 px-3 pb-2 text-[11px] ${msg.sender === "noa" ? "bg-black/5 py-2 rounded-b-2xl -mx-0.5 -mb-0.5" : ""}`}>
