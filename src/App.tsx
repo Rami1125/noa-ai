@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
+import AdminDashboard from "./components/AdminDashboard";
 import { 
   Send, 
   Paperclip, 
@@ -14,7 +15,8 @@ import {
   Check, 
   CheckCheck,
   Trash2,
-  ChevronLeft
+  ChevronLeft,
+  Shield
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
@@ -43,6 +45,7 @@ const SPEC_APP_ID = "ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e";
 const BRAND_GREEN = "#128C7E";
 const BRAND_DARK_GREEN = "#075E54";
 const NOA_AVATAR = "https://i.postimg.cc/qqWtk5qr/Gemini-Generated-Image-6z6qts6z6qts6z6q.png";
+const DRIVE_API_KEY = process.env.GOOGLE_DRIVE_API_KEY || "";
 
 type Message = {
   id: string;
@@ -52,6 +55,8 @@ type Message = {
   status: "sent" | "delivered" | "seen";
   userId?: string;
   reactions?: string[];
+  location?: { lat: number; lng: number } | null;
+  fileMetadata?: { name: string; size: number; type: string; driveId?: string };
 };
 
 export default function App() {
@@ -59,16 +64,75 @@ export default function App() {
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [view, setView] = useState<"chat" | "contacts">("chat");
+  const [deviceId, setDeviceId] = useState<string>("");
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [view, setView] = useState<"chat" | "contacts" | "admin">("chat");
   const [activeReactionPicker, setActiveReactionPicker] = useState<string | null>(null);
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [customerInfo, setCustomerInfo] = useState({ name: "לקוח מס' 1290", orderId: "ORD-9821" });
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  
+  // Audio Refs
+  const audioSent = useRef<HTMLAudioElement>(new Audio("https://www.myinstants.com/media/sounds/whatsapp_sent.mp3"));
+  const audioReceived = useRef<HTMLAudioElement>(new Audio("https://www.myinstants.com/media/sounds/whatsapp_incoming.mp3"));
+  const audioLocation = useRef<HTMLAudioElement>(new Audio("https://www.myinstants.com/media/sounds/whatsapp_location.mp3"));
+
+  // Heartbeat for "Malshinon"
+  useEffect(() => {
+    if (!userId) return;
+    const updateHeartbeat = async () => {
+      try {
+        await setDoc(doc(db, getCollectionPath("user_settings"), userId), {
+          lastHeartbeat: serverTimestamp(),
+          status: "online",
+          deviceId
+        }, { merge: true });
+      } catch (err) { console.error("Heartbeat error", err); }
+    };
+    const interval = setInterval(updateHeartbeat, 30000);
+    updateHeartbeat();
+    return () => clearInterval(interval);
+  }, [userId, deviceId]);
 
   // Path Helper
   const getCollectionPath = (collectionName: string) => `artifacts/${SPEC_APP_ID}/public/data/${collectionName}`;
+
+  // Log Event Helper
+  const logInteraction = async (event: string, metadata: any) => {
+    if (!SPEC_APP_ID) return;
+    try {
+      await addDoc(collection(db, getCollectionPath("ai_logs")), {
+        event,
+        deviceId: localStorage.getItem("deviceId") || "unknown",
+        userId,
+        location,
+        timestamp: serverTimestamp(),
+        ...metadata
+      });
+    } catch (err) {
+      console.error("Logging error:", err);
+    }
+  };
+
+  // Device & Location Init
+  useEffect(() => {
+    let id = localStorage.getItem("deviceId");
+    if (!id) {
+      id = "DEV-" + Math.random().toString(36).substr(2, 9).toUpperCase();
+      localStorage.setItem("deviceId", id);
+    }
+    setDeviceId(id);
+
+    if ("geolocation" in navigator) {
+      navigator.geolocation.watchPosition(
+        (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (err) => console.warn("Location blocked", err)
+      );
+    }
+    
+    logInteraction("app_init", { platform: navigator.platform });
+  }, []);
 
   // Mark messages as seen when entering chat view
   useEffect(() => {
@@ -189,12 +253,29 @@ export default function App() {
     const chatPath = getCollectionPath("chats");
     
     try {
+      const fileData = {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+      };
+
       await addDoc(collection(db, chatPath), {
         text: `📎 **קובץ צורף:** ${file.name} (${(file.size / 1024).toFixed(1)} KB)`,
         sender: "user",
         userId: userId,
         timestamp: serverTimestamp(),
         status: "sent",
+        fileMetadata: fileData,
+        location
+      });
+
+      // Log to AI Logs and Bridge Sessions
+      logInteraction("file_upload", { fileName: file.name, fileSize: file.size });
+      await addDoc(collection(db, getCollectionPath("bridge_sessions")), {
+        type: "attachment",
+        userId,
+        fileName: file.name,
+        timestamp: serverTimestamp()
       });
 
       setIsTyping(true);
@@ -206,6 +287,8 @@ export default function App() {
         timestamp: serverTimestamp(),
         status: "delivered",
       });
+      
+      audioReceived.current.play().catch(() => {});
       setIsTyping(false);
     } catch (error) {
       console.error("Error attaching file:", error);
@@ -227,13 +310,36 @@ export default function App() {
         userId: userId,
         timestamp: serverTimestamp(),
         status: "sent",
+        location
       });
+      
+      audioSent.current.play().catch(() => {});
+      if (location) audioLocation.current.play().catch(() => {});
+      logInteraction("message_sent", { textLength: userMsg.length });
 
       setIsTyping(true);
+      
+      // Fetch Multi-Collection Context (Knowledge Base Sync)
+      const [ordersSnap, salesSnap, inventorySnap, customerSnap] = await Promise.all([
+        getDocs(query(collection(db, getCollectionPath("orders")), orderBy("timestamp", "desc"), limit(5))),
+        getDocs(query(collection(db, getCollectionPath("sales")), orderBy("timestamp", "desc"), limit(10))),
+        getDocs(collection(db, getCollectionPath("inventory"))),
+        getDocs(query(collection(db, getCollectionPath("customers")), limit(1)))
+      ]);
+
+      const context = {
+        orders: ordersSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+        sales: salesSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+        inventory: inventorySnap.docs.map(d => ({ id: d.id, ...d.data() })),
+        customerProfile: customerSnap.docs[0]?.data() || customerInfo,
+        deviceId,
+        location
+      };
+      
       const history = messages.map(m => ({ text: m.text, sender: m.sender }));
       history.push({ text: userMsg, sender: "user" });
       
-      const noaText = await getNoaResponse(history);
+      const noaText = await getNoaResponse(history, context);
       
       await addDoc(collection(db, chatPath), {
         text: noaText,
@@ -284,7 +390,13 @@ export default function App() {
       }} 
       dir="rtl"
     >
-      {view === "contacts" ? (
+      {view === "admin" ? (
+        <AdminDashboard 
+          userId={userId} 
+          specId={SPEC_APP_ID} 
+          onBack={() => setView("chat")} 
+        />
+      ) : view === "contacts" ? (
         <>
           {/* Contacts Header */}
           <header className="h-20 bg-[#075E54] text-white flex items-center px-6 justify-between shadow-lg z-10">
@@ -356,7 +468,15 @@ export default function App() {
               <button onClick={() => setView("contacts")} className="md:hidden hover:bg-white/10 p-1 rounded-full">
                 <ChevronLeft size={24} />
               </button>
-              <div className="relative cursor-pointer" onClick={() => setView("contacts")}>
+              <div className="relative cursor-pointer" onClick={() => {
+                // Secret Admin Toggle: Click avatar 5 times
+                let clicks = parseInt(sessionStorage.getItem("admin_clicks") || "0") + 1;
+                sessionStorage.setItem("admin_clicks", clicks.toString());
+                if (clicks >= 5) {
+                  setIsAdminUnlocked(true);
+                  alert("🔐 Admin Node Access Enabled");
+                }
+              }}>
                 <img 
                   src={NOA_AVATAR} 
                   alt="Noa" 
@@ -370,6 +490,11 @@ export default function App() {
               </div>
             </div>
             <div className="flex items-center gap-4 opacity-90">
+              {isAdminUnlocked && (
+                <button onClick={() => setView("admin")} className="hover:scale-110 transition-transform">
+                  <Shield size={22} className="text-yellow-400" />
+                </button>
+              )}
               <Video size={22} className="cursor-pointer hover:text-gray-300" />
               <Phone size={20} className="cursor-pointer hover:text-gray-300" />
               <div className="relative group">
@@ -416,6 +541,33 @@ export default function App() {
                     onClick={() => setActiveReactionPicker(activeReactionPicker === msg.id ? null : msg.id)}
                   >
                     <div className="markdown-body text-[14.5px] text-[#303030] leading-relaxed overflow-hidden">
+                      {msg.fileMetadata && (
+                        <div className="mb-3">
+                          {msg.fileMetadata.type.startsWith("image/") ? (
+                            <img 
+                              src={URL.createObjectURL(new Blob())} // Placeholder for real drive link
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "https://via.placeholder.com/400x200?text=" + msg.fileMetadata?.name;
+                              }}
+                              alt={msg.fileMetadata.name}
+                              className="w-full rounded-lg shadow-sm border border-gray-100 mb-2"
+                            />
+                          ) : (
+                            <div className="flex items-center gap-3 p-3 bg-white/40 rounded-xl border border-white/20 shadow-sm backdrop-blur-sm">
+                               <div className="p-2 bg-red-50 text-red-500 rounded-lg">
+                                  <Paperclip size={20} />
+                               </div>
+                               <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-bold truncate">{msg.fileMetadata.name}</p>
+                                  <p className="text-[10px] text-gray-500">{(msg.fileMetadata.size / 1024).toFixed(1)} KB • PDF/Sheet</p>
+                               </div>
+                               <button className="p-2 hover:bg-gray-100 rounded-full text-blue-600">
+                                  <ChevronLeft size={20} className="rotate-180" />
+                                </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <ReactMarkdown rehypePlugins={[rehypeRaw]}>
                         {msg.text}
                       </ReactMarkdown>
@@ -624,13 +776,32 @@ export default function App() {
         
         /* Frosted Glass internal cards as requested */
         .card { 
-          background: rgba(255, 255, 255, 0.5); 
-          backdrop-filter: blur(4px);
-          border: 1px solid rgba(0, 128, 0, 0.15); 
-          border-radius: 12px; 
-          padding: 12px; 
-          margin: 8px 0; 
-          box-shadow: 0 2px 4px rgba(0,0,0,0.02); 
+          background: rgba(255, 255, 255, 0.7); 
+          backdrop-filter: blur(8px);
+          border: 1px solid rgba(18, 140, 126, 0.2); 
+          border-radius: 16px; 
+          padding: 16px; 
+          margin: 12px 0; 
+          box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+        }
+        
+        .timeline-item {
+          display: flex;
+          gap: 12px;
+          border-right: 2px solid #128C7E;
+          padding-right: 16px;
+          margin-bottom: 8px;
+          position: relative;
+        }
+        .timeline-dot {
+          position: absolute;
+          right: -7px;
+          top: 0;
+          width: 12px;
+          height: 12px;
+          background: #128C7E;
+          border-radius: 50%;
+          border: 2px solid white;
         }
       `}</style>
     </div>

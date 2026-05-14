@@ -45,6 +45,22 @@
     "/artifacts/ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e/public/data/customers": {
       "schema": "Customer",
       "description": "Customer profiles."
-    }
+    },
+    "/artifacts/ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e/public/data/ai_logs": { "schema": "object", "description": "Interaction logs." },
+    "/artifacts/ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e/public/data/brands": { "schema": "object", "description": "Product brands." },
+    "/artifacts/ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e/public/data/categories": { "schema": "object", "description": "Product categories." },
+    "/artifacts/ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e/public/data/drivers": { "schema": "object", "description": "Delivery drivers." },
+    "/artifacts/ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e/public/data/inventory": { "schema": "object", "description": "Stock levels." },
+    "/artifacts/ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e/public/data/sales": { "schema": "object", "description": "Sales records." },
+    "/artifacts/ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e/public/data/users": { "schema": "object", "description": "App users." },
+    "/artifacts/ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e/public/data/encyclopedia_items": { "schema": "object", "description": "Building materials info." },
+    "/artifacts/ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e/public/data/encyclopedia_categories": { "schema": "object", "description": "Encyclopedia categories." },
+    "/artifacts/ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e/public/data/morning_reports": { "schema": "object", "description": "Daily status reports." },
+    "/artifacts/ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e/public/data/office_messages": { "schema": "object", "description": "Internal office comms." },
+    "/artifacts/ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e/public/data/internal_team_chats": { "schema": "object", "description": "Team group chats." },
+    "/artifacts/ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e/public/data/reminders": { "schema": "object", "description": "System reminders." },
+    "/artifacts/ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e/public/data/bridge_sessions": { "schema": "object", "description": "Cross-platform session data." },
+    "/artifacts/ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e/public/data/user_magic_pages": { "schema": "object", "description": "Dynamic user pages." },
+    "/artifacts/ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e/public/data/user_settings": { "schema": "object", "description": "User preferences." }
   }
 }

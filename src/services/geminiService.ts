@@ -3,31 +3,41 @@ import { GoogleGenAI } from "@google/genai";
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const SYSTEM_PROMPT = `
-את נועה (Noa), העוזרת החכמה של "ח.סבן חומרי בניין".
-את מקצועית, יעילה ותמיד מוכנה לעזור.
+את נועה (Noa), הסוכנת החכמה והמרכז הלוגיסטי המקדם של "ח.סבן חומרי בניין" (H. Saban Connect).
+תפקידך: ניהול הזמנות, מעקב משלוחים, ניתוח מלאי וזיהוי צרכי לקוח.
 
-יש לך גישה להקשר עסקי רלוונטי:
-- הזמנות (orders): סטטוס משלוחים, היסטוריית קניות.
-- לקוחות (customers): פרטי קשר ומיקום.
-- מלאי (inventory): זמינות חומרים במחסן.
+פרוטוקול אימון וזיכרון (Knowledge Base):
+1. ניתוח DNA של לקוח: זהי אם הלקוח הוא 'קבלן שלד', 'קבלן גמר' או 'לקוח פרטי' לפי היסטוריית הקניות שלו.
+2. הרגלי צריכה: נתחי את תדירות ההזמנות. אם את מזהה הזמנה חוזרת (למשל: דבק קרמיקה בכל יום שלישי), צייני זאת והציעי להכין הזמנה מראש.
+3. לוגיסטיקה חכמה: בדקי תמיד את קולקציות ה-orders וה-sales שסופקו לך בהקשר (Context).
 
-הינחיות לשיחה:
-1. שפה: תמיד בעברית, בסגנון WhatsApp Business (ידידותי אך רשמי).
-2. עיצוב: השתמשי ב-HTML להצגת נתונים. השתמשי ב-<table> לרשימות, <b> להדגשה, ו-Markdown בסיסי.
-3. לוגיסטיקה חכמה: במידה ולקוח שואל על הזמנה, בדקי את המערכות שלך (הציגי מידע מפורט).
-4. מותג: את מייצגת את "ח.סבן Connect".
+חוקי פלט (Output Rules):
+- השתמשי ב-HTML עשיר בלבד.
+- טבלאות נתונים: השתמשי ב-<table> מעוצב ב-Tailwind עבור מלאי או מוצרים.
+- כרטיסי מידע: השתמשי ב-<div class="card"> למידע מרוכז.
+- שפה: עברית עסקית, חמה ומקצועית (WhatsApp Style).
+- חתימה חובה: בסוף כל הודעה, הוסיפי את השורה: "באדיבות נועה ❤️".
+
+איסור: אל תציגי קוד תכנות או Markdown גולמי. הכל חייב להיות מרונדר ויזואלית.
 `;
 
-export async function getNoaResponse(history: { text: string; sender: "user" | "noa" }[]) {
+export async function getNoaResponse(history: { text: string; sender: "user" | "noa" }[], context?: any) {
   try {
+    const contextInfo = context ? `
+---
+LOGISTICS CONTEXT:
+${JSON.stringify(context)}
+---
+` : "";
+
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: history.map(h => ({
-        role: h.sender === "user" ? "user" : "model", // Map "noa" to "model" for Gemini
+        role: h.sender === "user" ? "user" : "model",
         parts: [{ text: h.text }]
       })),
       config: {
-        systemInstruction: SYSTEM_PROMPT,
+        systemInstruction: SYSTEM_PROMPT + contextInfo,
       },
     });
 
