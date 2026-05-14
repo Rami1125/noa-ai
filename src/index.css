@@ -1,1 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&family=Assistant:wght@200;400;600;800&display=swap');
 @import "tailwindcss";
+
+@theme {
+  --font-heebo: "Heebo", sans-serif;
+  --font-assistant: "Assistant", sans-serif;
+}

@@ -35,21 +35,59 @@ interface AdminDashboardProps {
   userId: string;
   specId: string;
   onBack: () => void;
+  locationAlertActive: boolean;
+  onDismissAlert: () => void;
 }
 
-export default function AdminDashboard({ userId, specId, onBack }: AdminDashboardProps) {
+export default function AdminDashboard({ userId, specId, onBack, locationAlertActive, onDismissAlert }: AdminDashboardProps) {
+  const [isVaultLocked, setIsVaultLocked] = useState(true);
+  const [vaultPassword, setVaultPassword] = useState("");
   const [activeTab, setActiveTab] = useState<AdminTab>("malshinon");
   const [logs, setLogs] = useState<any[]>([]);
   const [liveChats, setLiveChats] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [newEmployee, setNewEmployee] = useState({ name: "", phone: "", power: "1" });
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState(0);
   
   const getCollectionPath = (name: string) => `artifacts/${specId}/public/data/${name}`;
 
-  const NOA_AVATAR = "https://i.postimg.cc/qqLm9M5t/Gemini-Generated-Image-gmd5k7gmd5k7gmd5.png";
+  const handleVaultLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (vaultPassword.toLowerCase() === "rami2026") {
+      setIsVaultLocked(false);
+    } else {
+      alert("ACCESS DENIED: Credentials Invalid");
+    }
+  };
+
+  const handleWhatsAppSync = () => {
+    setIsSyncing(true);
+    let prog = 0;
+    const interval = setInterval(() => {
+      prog += 5;
+      setSyncProgress(prog);
+      if (prog >= 100) {
+        clearInterval(interval);
+        setIsSyncing(false);
+        alert("DNA NEURAL WEIGHTS UPDATED: Style: Urgent/Professional, Slang: Low, Urgency: High");
+      }
+    }, 100);
+  };
+
+  const handleSaveDNA = async (trait: string, value: string) => {
+    try {
+      await setDoc(doc(db, getCollectionPath("user_profiles"), "rami"), {
+        [`trait_${trait}`]: value,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      alert(`TRAIT SAVED: ${trait} -> ${value}`);
+    } catch (e) { console.error(e); }
+  };
 
   // Malshinon Listeners
   useEffect(() => {
+    if (isVaultLocked) return;
     const logsQ = query(collection(db, getCollectionPath("ai_logs")), orderBy("timestamp", "desc"), limit(50));
     const chatsQ = query(collection(db, getCollectionPath("chats")), orderBy("timestamp", "desc"), limit(20));
     
@@ -86,8 +124,53 @@ export default function AdminDashboard({ userId, specId, onBack }: AdminDashboar
     }
   };
 
+  const NOA_AVATAR = "https://i.postimg.cc/qqLm9M5t/Gemini-Generated-Image-gmd5k7gmd5k7gmd5.png";
+
+  if (isVaultLocked) {
+    return (
+      <div className="h-screen w-full bg-[#0b141a] flex items-center justify-center p-6 rtl" dir="rtl">
+        <div className="max-w-md w-full space-y-8 text-center">
+          <div className="relative inline-block">
+             <div className="w-24 h-24 bg-[#00a884]/10 rounded-full flex items-center justify-center border border-[#00a884]/30 text-[#00a884]">
+                <ShieldAlert size={48} />
+             </div>
+             <div className="absolute -bottom-2 -right-2 bg-red-600 p-2 rounded-lg border-2 border-[#0b141a]">
+                <Activity size={16} className="text-white" />
+             </div>
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-white mb-2">SabanOS Executive Vault</h1>
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Restricted Sentinel Access</p>
+          </div>
+          <form onSubmit={handleVaultLogin} className="space-y-4">
+            <input 
+              type="password"
+              value={vaultPassword}
+              onChange={e => setVaultPassword(e.target.value)}
+              className="w-full bg-[#202c33] border border-white/5 rounded-2xl p-5 text-white text-center focus:border-[#00a884] outline-none font-mono text-2xl tracking-[0.5em]"
+              placeholder="••••"
+            />
+            <button className="w-full bg-[#00a884] hover:bg-[#06cf9c] text-white p-5 rounded-2xl font-black text-lg transition-all shadow-xl shadow-[#00a884]/20">
+              UNLOCK VAULT
+            </button>
+          </form>
+          <div className="pt-8 flex justify-center gap-4">
+             <div className="flex items-center gap-2 text-[10px] text-slate-600 font-bold uppercase">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                NODE_ENCRYPTED
+             </div>
+             <div className="flex items-center gap-2 text-[10px] text-slate-600 font-bold uppercase">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                RADAR_ACTIVE
+             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 bg-[#0b141a] text-slate-200 flex flex-col md:flex-row overflow-hidden font-sans rtl" dir="rtl">
+    <div className="flex-1 bg-[#0b141a] text-slate-200 flex flex-col md:flex-row overflow-hidden font-heebo rtl" dir="rtl">
       {/* Sidebar */}
       <aside className="w-full md:w-72 bg-[#111b21] border-l border-[#202c33] flex flex-col shadow-2xl z-30">
         <div className="p-8 border-b border-[#202c33]">
@@ -163,6 +246,19 @@ export default function AdminDashboard({ userId, specId, onBack }: AdminDashboar
                   {activeTab === "training" && "אימון הבינה המלאכותית על בסיס ה-DNA התקשורתי של רמי."}
                </p>
             </div>
+            
+            {locationAlertActive && (
+              <motion.button 
+                initial={{ scale: 0.8 }}
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ repeat: Infinity, duration: 1 }}
+                onClick={onDismissAlert}
+                className="bg-red-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-3 animate-pulse shadow-xl shadow-red-600/40"
+              >
+                <ShieldAlert size={24} />
+                DISMISS LOCATION ALERT
+              </motion.button>
+            )}
          </header>
 
          {/* Malshinon Tab */}
@@ -331,16 +427,34 @@ export default function AdminDashboard({ userId, specId, onBack }: AdminDashboar
                <div className="bg-[#111b21] p-12 rounded-[50px] border border-[#202c33] shadow-2xl flex flex-col items-center justify-center text-center space-y-8 relative overflow-hidden group">
                   <div className="absolute top-0 left-0 w-full h-1 bg-[#00a884]/40"></div>
                   <div className="w-28 h-28 bg-[#00a884]/10 rounded-[40px] flex items-center justify-center border border-[#00a884]/20 shadow-inner group-hover:scale-110 transition-transform duration-500">
-                     <Upload size={56} className="text-[#00a884]" />
+                     <Upload size={56} className={`${isSyncing ? "animate-bounce" : ""} text-[#00a884]`} />
                   </div>
                   <div>
                     <h3 className="text-3xl font-black text-white mb-3">WhatsApp DNA Sync</h3>
-                    <p className="text-slate-500 text-base leading-relaxed">העלה היסטוריית שיחות למידול ורבלי של הסוכן. הדיוק הנוכחי: 98.4%.</p>
+                    <p className="text-slate-500 text-base leading-relaxed">העלה היסטוריית שיחות למידול ורבלי של הסוכן.</p>
                   </div>
-                  <button className="w-full bg-[#202c33] border border-white/5 hover:border-[#00a884]/40 p-5 rounded-3xl font-black text-white transition-all flex items-center justify-center gap-4 text-lg">
-                     <Upload size={24} />
-                     Upload Protocol .txt
-                  </button>
+                  
+                  {isSyncing ? (
+                    <div className="w-full space-y-4">
+                       <div className="h-4 bg-[#202c33] rounded-full overflow-hidden">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${syncProgress}%` }}
+                            className="h-full bg-[#00a884] shadow-[0_0_15px_#00a884]"
+                          />
+                       </div>
+                       <p className="text-[#00a884] font-black text-xs animate-pulse">ANALYZING SENTIMENT: {syncProgress}%</p>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={handleWhatsAppSync}
+                      className="w-full bg-[#202c33] border border-white/5 hover:border-[#00a884]/40 p-5 rounded-3xl font-black text-white transition-all flex items-center justify-center gap-4 text-lg"
+                    >
+                       <Upload size={24} />
+                       Upload Protocol .txt
+                    </button>
+                  )}
+                  
                   <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">Neural weights will be updated upon completion</p>
                </div>
 
@@ -362,18 +476,14 @@ export default function AdminDashboard({ userId, specId, onBack }: AdminDashboar
                   <div className="flex-1 p-8 overflow-y-auto space-y-8 custom-scrollbar bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-opacity-5">
                      <div className="flex justify-start">
                         <div className="bg-[#202c33] p-6 rounded-[32px] rounded-tr-none max-w-lg border border-white/5 shadow-xl">
-                           <p className="text-sm font-bold text-slate-200 leading-relaxed">שלום רמי. בוא נבצע סימולציית העדפות לקוח. האם המשתמש 'אבי כהן' בדרך כלל מבקש הנחה במקום, או שזה סגור בחוזה השנתי?</p>
+                           <p className="text-sm font-bold text-slate-200 leading-relaxed">שלום רמי. בוא נקבע את הטון התקשורתי. איך נועה צריכה לפנות אליך בדרך כלל?</p>
                         </div>
                      </div>
-                     <div className="flex justify-end">
-                        <div className="bg-[#005c4b] p-6 rounded-[32px] rounded-tl-none max-w-lg shadow-xl shadow-[#005c4b]/20 text-white">
-                           <p className="text-sm font-bold leading-relaxed italic">"אבי לא מתווכח על מחיר. הוא יודע שהמוצרים שלנו הכי טובים, הוא רק רוצה לוודא שהאספקה מגיעה ב-7 בבוקר לאתר."</p>
-                        </div>
-                     </div>
-                     <div className="flex justify-start">
-                        <div className="bg-[#202c33] p-6 rounded-[32px] rounded-tr-none max-w-lg border border-white/5 shadow-xl">
-                           <p className="text-sm font-bold text-slate-200 leading-relaxed">Excellent. מתעדת העדפה: חשיבות קריטית לזמני אספקה (קומנדו שטח). עדכון משקולות Persona הושלם.</p>
-                        </div>
+                     <div className="grid grid-cols-2 gap-4 mt-4">
+                        <button onClick={() => handleSaveDNA("tone", "Formal/Professional")} className="p-4 bg-[#202c33] border border-white/5 rounded-2xl hover:border-[#00a884] transition-all text-white font-bold">פורמלי / מקצועי</button>
+                        <button onClick={() => handleSaveDNA("tone", "Brotherly/Warm")} className="p-4 bg-[#202c33] border border-white/5 rounded-2xl hover:border-[#00a884] transition-all text-white font-bold">חברי / "אחי"</button>
+                        <button onClick={() => handleSaveDNA("tone", "Direct/Technical")} className="p-4 bg-[#202c33] border border-white/5 rounded-2xl hover:border-[#00a884] transition-all text-white font-bold">ישיר / טכני</button>
+                        <button onClick={() => handleSaveDNA("tone", "Urgent/Field-Style")} className="p-4 bg-[#202c33] border border-white/5 rounded-2xl hover:border-[#00a884] transition-all text-white font-bold">דחוף / שטח</button>
                      </div>
                   </div>
 

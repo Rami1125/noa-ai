@@ -33,6 +33,7 @@ import {
   getDocs,
   setDoc,
   limit,
+  where,
   arrayUnion,
   arrayRemove 
 } from "firebase/firestore";
@@ -75,6 +76,8 @@ export default function App() {
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [customerInfo, setCustomerInfo] = useState({ name: "לקוח מס' 1290", orderId: "ORD-9821" });
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [locationAlertActive, setLocationAlertActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   
@@ -82,8 +85,49 @@ export default function App() {
   const audioSent = useRef<HTMLAudioElement>(new Audio("https://www.myinstants.com/media/sounds/whatsapp_sent.mp3"));
   const audioReceived = useRef<HTMLAudioElement>(new Audio("https://www.myinstants.com/media/sounds/whatsapp_incoming.mp3"));
   const audioLocation = useRef<HTMLAudioElement>(new Audio("https://www.myinstants.com/media/sounds/whatsapp_location.mp3"));
+  const audioAlert = useRef<HTMLAudioElement>(new Audio("https://www.myinstants.com/media/sounds/emergency-alarm-with-reverb.mp3"));
 
-  // Heartbeat for "Malshinon"
+  // Fetch DNA DNA (Personality Profile)
+  useEffect(() => {
+    if (!userId) return;
+    const fetchDna = async () => {
+      try {
+        const dnaSnap = await getDocs(collection(db, getCollectionPath("user_profiles")));
+        // For demo, we just take the first profile or one named 'rami'
+        const profile = dnaSnap.docs.find(d => d.id === "rami")?.data();
+        if (profile) setUserProfile(profile);
+      } catch (err) { console.error("DNA fetch error", err); }
+    };
+    fetchDna();
+  }, [userId]);
+
+  // Location Alert Loop for Admin
+  useEffect(() => {
+    if (view === "admin" && locationAlertActive) {
+      audioAlert.current.loop = true;
+      audioAlert.current.play().catch(() => {});
+    } else {
+      audioAlert.current.pause();
+      audioAlert.current.currentTime = 0;
+    }
+  }, [view, locationAlertActive]);
+
+  // Monitor logs for location alerts (Simulating real-time alert trigger)
+  useEffect(() => {
+    if (!userId) return;
+    const logsQ = query(collection(db, getCollectionPath("ai_logs")), where("event", "==", "location_sent"), limit(1));
+    const unsub = onSnapshot(logsQ, (snap) => {
+      if (!snap.empty) {
+        const latest = snap.docs[0].data();
+        const now = Date.now();
+        const msgTime = latest.timestamp?.toMillis() || 0;
+        if (now - msgTime < 10000) { // If sent in last 10 seconds
+           setLocationAlertActive(true);
+        }
+      }
+    });
+    return () => unsub();
+  }, [userId]);
   useEffect(() => {
     if (!userId) return;
     const updateHeartbeat = async () => {
@@ -329,7 +373,10 @@ export default function App() {
       });
       
       audioSent.current.play().catch(() => {});
-      if (location) audioLocation.current.play().catch(() => {});
+      if (location) {
+        audioLocation.current.play().catch(() => {});
+        logInteraction("location_sent", { coords: location });
+      }
       logInteraction("message_sent", { textLength: userMsg.length });
 
       setIsTyping(true);
@@ -347,6 +394,7 @@ export default function App() {
         sales: salesSnap.docs.map(d => ({ id: d.id, ...d.data() })),
         inventory: inventorySnap.docs.map(d => ({ id: d.id, ...d.data() })),
         customerProfile: customerSnap.docs[0]?.data() || customerInfo,
+        userProfile: userProfile, // PASSING DNA
         deviceId,
         location
       };
@@ -397,7 +445,7 @@ export default function App() {
 
   return (
     <div 
-      className="flex flex-col h-screen w-full shadow-2xl overflow-hidden font-sans relative" 
+      className="flex flex-col h-screen w-full shadow-2xl overflow-hidden font-heebo relative" 
       style={{ 
         backgroundColor: "#e5ddd5", 
         backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')",
@@ -410,6 +458,8 @@ export default function App() {
           userId={userId} 
           specId={SPEC_APP_ID} 
           onBack={() => setView("chat")} 
+          locationAlertActive={locationAlertActive}
+          onDismissAlert={() => setLocationAlertActive(false)}
         />
       ) : view === "contacts" ? (
         <>
