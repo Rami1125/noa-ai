@@ -16,7 +16,8 @@ import {
   Plus,
   ShieldCheck,
   Pencil,
-  Mail
+  Mail,
+  Search
 } from "lucide-react";
 import { 
   collection, 
@@ -41,13 +42,14 @@ type AdminTab = "users" | "training" | "malshinon";
 
 interface AdminDashboardProps {
   userId: string;
+  userProfile: any;
   specId: string;
   onBack: () => void;
   locationAlertActive: boolean;
   onDismissAlert: () => void;
 }
 
-export default function AdminDashboard({ specId, onBack, locationAlertActive, onDismissAlert }: AdminDashboardProps) {
+export default function AdminDashboard({ specId, onBack, locationAlertActive, onDismissAlert, userProfile }: AdminDashboardProps) {
   const [isVaultLocked, setIsVaultLocked] = useState(true);
   const [vaultPassword, setVaultPassword] = useState("");
   const [activeTab, setActiveTab] = useState<AdminTab>("malshinon");
@@ -62,7 +64,45 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
   const [isSandboxOpen, setIsSandboxOpen] = useState(false);
   const [sandboxMessages, setSandboxMessages] = useState<any[]>([]);
   const [sandboxInput, setSandboxInput] = useState("");
-  const [latestMetrics, setLatestMetrics] = useState({ salesPush: 91, technicalAccuracy: 94, personalitySync: 82 });
+  const [userRules, setUserRules] = useState("");
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
+
+  const handleApplyRules = async () => {
+    if (!editingEmployee || !userRules.trim()) return;
+    try {
+      await updateDoc(doc(db, getCollectionPath("users"), editingEmployee.id), {
+        customRules: userRules,
+        updatedAt: serverTimestamp()
+      });
+      alert(`חוקים חדשים הוחלו על ${editingEmployee.name}`);
+      setUserRules("");
+    } catch (e) { console.error(e); }
+  };
+
+  const handleMockImageAnalysis = () => {
+     setIsAnalyzingImage(true);
+     setTimeout(async () => {
+        const traits = ["Dominant", "Detailed", "Logistics-Focused", "Urgent"];
+        const trait = traits[Math.floor(Math.random() * traits.length)];
+        if (editingEmployee) {
+           await updateDoc(doc(db, getCollectionPath("users"), editingEmployee.id), {
+              "dna.personality": trait,
+              updatedAt: serverTimestamp()
+           });
+        }
+        setIsAnalyzingImage(false);
+        alert(`ניתוח תמונה הושלם: אישיות ${trait} זוהתה והוזרקה ל-DNA`);
+     }, 2000);
+  };
+  const [latestMetrics, setLatestMetrics] = useState({ 
+    salesPush: 91, 
+    technicalAccuracy: 94, 
+    personalitySync: 82,
+    globalOversight: 98,
+    hqEfficiency: 95
+  });
+
+  const isCeo = userProfile?.powerLevel === "מנכ״ל" || userProfile?.name?.includes("הראל");
   
   const roles = [
     "מנכ״ל",
@@ -158,7 +198,7 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
       
       const trainingLog = allLogs.find((d: any) => d.type === "dna_training");
       if (trainingLog && trainingLog.metrics) {
-        setLatestMetrics(trainingLog.metrics);
+        setLatestMetrics(prev => ({ ...prev, ...trainingLog.metrics }));
       }
     });
     
@@ -300,12 +340,12 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
         <div className="p-8 border-b border-white/10">
           <div className="flex items-center gap-4 mb-6">
              <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20">
-                <LayoutDashboard size={32} className="text-[#C5A059]" />
+                {isCeo ? <ShieldCheck size={32} className="text-emerald-400" /> : <LayoutDashboard size={32} className="text-[#C5A059]" />}
              </div>
              <div>
-                <h2 className="font-black text-xl leading-tight">ניהול SABAN</h2>
+                <h2 className="font-black text-xl leading-tight">{isCeo ? "HQ GLOBAL" : "ניהול SABAN"}</h2>
                 <div className="flex items-center gap-1 text-[10px] text-[#C5A059] font-bold uppercase tracking-widest">
-                   <span>מנהל מערכת מאושר</span>
+                   <span>{isCeo ? "המנכ״ל הראל אידלסטון" : "מנהל מערכת מאושר"}</span>
                 </div>
              </div>
           </div>
@@ -549,59 +589,93 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
 
                   <div className="bg-white rounded-[40px] border border-slate-200 shadow-xl overflow-hidden">
                      <table className="w-full text-right">
-                        <thead className="bg-slate-50">
-                           <tr className="text-slate-400 text-[11px] font-black uppercase tracking-wider">
-                              <th className="p-6">משתמש</th>
-                              <th className="p-6">טלפון / מזהה</th>
-                              <th className="p-6">רמת סמכות</th>
-                              <th className="p-6">סטטוס</th>
-                              <th className="p-6 text-center">פעולות</th>
+                        <thead className="bg-[#1e293b] text-white">
+                           <tr className="text-[11px] font-black uppercase tracking-widest text-[#C5A059]">
+                              <th className="p-6">A. תקשורת (Identity)</th>
+                              <th className="p-6">B. חיים אישיים (History)</th>
+                              <th className="p-6">C. DNA מקצועי (SabanOS)</th>
+                              <th className="p-6">סטטוס סוכן</th>
+                              <th className="p-6 text-center">אימון DNA</th>
                            </tr>
                         </thead>
                         <tbody>
                            {employees.map((emp) => (
-                              <tr key={emp.id} className="border-t border-slate-100 hover:bg-slate-50 transition-colors">
+                              <tr key={emp.id} className="border-t border-slate-100 hover:bg-[#C5A059]/5 transition-colors">
+                                 {/* Category A: Communication */}
                                  <td className="p-6">
-                                    <div className="flex items-center gap-3">
-                                       <img src={emp.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${emp.id}`} className="w-10 h-10 rounded-full border border-slate-200 bg-slate-100" alt="" />
+                                    <div className="flex items-center gap-4">
+                                       <div className="relative">
+                                          <img src={emp.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${emp.id}`} className="w-14 h-14 rounded-2xl border-2 border-white shadow-lg bg-white object-cover" alt="" />
+                                          <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${emp.status === 'online' ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                                       </div>
                                        <div className="flex flex-col">
-                                          <span className="font-black text-[#1e293b]">{emp.name}</span>
-                                          <span className="text-[10px] text-slate-400 font-bold">{emp.email || "אין אימייל רשום"}</span>
+                                          <span className="font-black text-lg text-[#1e293b]">{emp.name}</span>
+                                          <span className="text-[11px] text-[#C5A059] font-black uppercase tracking-tight">{emp.id}</span>
+                                          <span className="text-[10px] text-slate-400 font-bold">{emp.email || "MISSING_MAIL"}</span>
                                        </div>
                                     </div>
                                  </td>
-                                 <td className="p-6 font-mono text-slate-500">{emp.id}</td>
+
+                                 {/* Category B: Personal Life */}
                                  <td className="p-6">
-                                    <span className="px-4 py-1.5 rounded-full text-[10px] font-black border bg-blue-50 text-blue-600 border-blue-100">
-                                       {emp.powerLevel || "שטח"}
-                                    </span>
-                                 </td>
-                                 <td className="p-6">
-                                    <div className="flex items-center gap-2 text-xs font-bold">
-                                       <div className={`w-2 h-2 rounded-full ${emp.status === 'online' ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`}></div>
-                                       {emp.status === 'online' ? 'מחובר' : 'לא פעיל'}
+                                    <div className="space-y-1">
+                                       <div className="flex items-center gap-2">
+                                          <span className="text-[10px] font-black text-slate-400 uppercase">מצב:</span>
+                                          <span className="text-xs font-bold text-[#1e293b]">{emp.personal?.status || "טרם נלמד"}</span>
+                                       </div>
+                                       <div className="flex items-center gap-2">
+                                          <span className="text-[10px] font-black text-slate-400 uppercase">ילדים:</span>
+                                          <span className="text-xs font-bold text-[#1e293b]">{emp.personal?.children || "0"}</span>
+                                       </div>
+                                       <div className="h-1 w-20 bg-slate-100 rounded-full overflow-hidden mt-2">
+                                          <div className="h-full bg-[#C5A059]" style={{ width: emp.personal?.learningProgress || '20%' }} />
+                                       </div>
                                     </div>
                                  </td>
-                                 <td className="p-6 text-center">
-                                    <div className="flex justify-center gap-3">
+
+                                 {/* Category C: Professional DNA */}
+                                 <td className="p-6">
+                                    <div className="space-y-2">
+                                       <div className="px-3 py-1 rounded-lg bg-[#1e293b] text-white text-[10px] font-black inline-block uppercase">
+                                          {emp.powerLevel || "AGENT"}
+                                       </div>
+                                       <div className="text-[10px] text-slate-500 font-medium">
+                                          <p>פעולות נפוצות: {emp.dna?.recurringActions || "ניהול סחר"}</p>
+                                          <p className="text-[#C5A059] font-bold">צורך עזרה ב: {emp.dna?.neededHelp || "אוטומציה"}</p>
+                                       </div>
+                                    </div>
+                                 </td>
+
+                                 {/* Status */}
+                                 <td className="p-6">
+                                    <div className="flex flex-col gap-1">
+                                       <div className="flex items-center gap-2 text-xs font-black uppercase">
+                                          <div className={`w-2 h-2 rounded-full ${emp.status === 'online' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-300'}`} />
+                                          {emp.status === 'online' ? 'Active' : 'Offline'}
+                                       </div>
+                                       <span className="text-[10px] text-slate-400 italic">נראה לאחרונה: {emp.lastSeen ? format(emp.lastSeen.toDate(), "HH:mm") : "---"}</span>
+                                    </div>
+                                 </td>
+
+                                 {/* Actions */}
+                                 <td className="p-6">
+                                    <div className="flex justify-center gap-4">
                                        <button 
                                           onClick={() => startSandbox(emp)} 
-                                          className="text-slate-300 hover:text-emerald-500 transition-colors"
-                                          title="סימולציית אימון"
+                                          className="p-3 bg-[#C5A059]/10 text-[#C5A059] rounded-xl hover:bg-[#C5A059] hover:text-white transition-all shadow-sm"
+                                          title="הוראת DNA למערכת"
                                        >
                                           <FlaskConical size={20} />
                                        </button>
                                        <button 
                                           onClick={() => startEdit(emp)} 
-                                          className="text-slate-300 hover:text-[#C5A059] transition-colors pointer-events-auto"
-                                          title="עריכת משתמש"
+                                          className="p-3 bg-slate-100 text-slate-500 rounded-xl hover:bg-[#1e293b] hover:text-white transition-all"
                                        >
                                           <Pencil size={20} />
                                        </button>
                                        <button 
                                           onClick={() => handleDeleteEmployee(emp.id)} 
-                                          className="text-slate-300 hover:text-red-500 transition-colors pointer-events-auto"
-                                          title="מחיקת משתמש"
+                                          className="p-3 bg-red-50 text-red-300 rounded-xl hover:bg-red-500 hover:text-white transition-all"
                                        >
                                           <Trash2 size={20} />
                                        </button>
@@ -683,18 +757,22 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                   {/* Performance Analytics Section */}
                   <div className="bg-white p-10 rounded-[50px] border border-slate-200 shadow-xl space-y-8">
                      <div className="flex items-center justify-between">
-                        <h3 className="text-2xl font-black text-[#1e293b]">Agent Performance Meter</h3>
+                        <h3 className="text-2xl font-black text-[#1e293b]">{isCeo ? "HQ Global Performance" : "Agent Performance Meter"}</h3>
                         <div className="px-4 py-2 bg-[#C5A059]/10 rounded-xl text-[#C5A059] font-black text-xs uppercase tracking-widest">
-                           Live AI Status
+                           {isCeo ? "MASTER OVERSIGHT" : "Live AI Status"}
                         </div>
                      </div>
 
                      <div className="space-y-10">
-                        {[
+                        {(isCeo ? [
+                           { label: "Global Oversight %", val: latestMetrics.globalOversight, color: "#10b981", glow: "0 0 20px rgba(16, 185, 129, 0.4)" },
+                           { label: "HQ Efficiency %", val: latestMetrics.hqEfficiency, color: "#1e293b", glow: "0 0 20px rgba(30, 41, 59, 0.4)" },
+                           { label: "Network Stability %", val: 99, color: "#3b82f6", glow: "0 0 20px rgba(59, 130, 246, 0.4)" }
+                        ] : [
                            { label: "Sales Push %", val: latestMetrics.salesPush, color: "#C5A059", glow: "0 0 20px rgba(197, 160, 89, 0.4)" },
                            { label: "Technical Accuracy %", val: latestMetrics.technicalAccuracy, color: "#1e293b", glow: "0 0 20px rgba(30, 41, 59, 0.4)" },
                            { label: "Personality Sync %", val: latestMetrics.personalitySync, color: "#10b981", glow: "0 0 20px rgba(16, 185, 129, 0.4)" }
-                        ].map((metric, i) => (
+                        ]).map((metric, i) => (
                            <div key={metric.label} className="space-y-3">
                               <div className="flex justify-between items-end">
                                  <span className="font-black text-slate-500 uppercase text-xs">{metric.label}</span>
@@ -779,6 +857,48 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
               </header>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50 custom-scrollbar">
+                 {/* Injection Panel */}
+                 <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white p-4 rounded-3xl border border-[#C5A059]/30 shadow-sm space-y-3">
+                       <div className="flex items-center justify-between text-[10px] font-black uppercase text-[#C5A059]">
+                          <span>הזרקת חוקי התנהגות (Rules)</span>
+                          <ShieldCheck size={14} />
+                       </div>
+                       <textarea 
+                          value={userRules}
+                          onChange={e => setUserRules(e.target.value)}
+                          placeholder="למשל: תמיד לענות לו בקיצור, לא להציע הנחות..."
+                          className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-xs font-bold h-20 outline-none focus:border-[#C5A059]"
+                       />
+                       <button 
+                          onClick={handleApplyRules}
+                          className="w-full py-2 bg-[#1e293b] text-white rounded-lg text-[10px] font-black uppercase hover:bg-black transition-all"
+                       >
+                          Apply Behavioral Rules
+                       </button>
+                    </div>
+                    
+                    <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
+                       <div>
+                          <div className="flex items-center justify-between text-[10px] font-black uppercase text-slate-400">
+                             <span>ניתוח אישיות צילום (DNA Inject)</span>
+                             <Users size={14} />
+                          </div>
+                          <p className="text-[10px] text-slate-400 mt-2">ניתוח פסיכולוגי של תמונת הפרופיל לקביעת טון שיח מותאם.</p>
+                       </div>
+                       <button 
+                          onClick={handleMockImageAnalysis}
+                          disabled={isAnalyzingImage}
+                          className="w-full py-2 bg-slate-50 border border-slate-200 text-[#1e293b] rounded-lg text-[10px] font-black uppercase hover:border-[#C5A059] transition-all flex items-center justify-center gap-2"
+                       >
+                          {isAnalyzingImage ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, ease: "linear" }}><Activity size={12} /></motion.div> : <Search size={12} />}
+                          {isAnalyzingImage ? "Analyzing Faces..." : "Perform Personality Analysis"}
+                       </button>
+                    </div>
+                 </div>
+
+                 <div className="h-px bg-slate-200 my-4" />
+
                  {sandboxMessages.map(m => (
                     <div key={m.id} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                        <div className={`p-4 rounded-2xl max-w-[80%] shadow-sm ${m.sender === 'user' ? 'bg-[#1e293b] text-white rounded-tr-none' : 'bg-white text-[#1e293b] rounded-tl-none border border-slate-100'}`}>

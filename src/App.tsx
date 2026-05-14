@@ -48,12 +48,48 @@ export default function App() {
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [deviceId, setDeviceId] = useState<string>("");
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [view, setView] = useState<"chat" | "admin">("chat");
+  const [view, setView] = useState<"chat" | "admin">(() => (localStorage.getItem("saban_view") as any) || "chat");
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
   const [locationAlertActive, setLocationAlertActive] = useState(false);
-  
+
+  // Persistence logic for view
+  useEffect(() => {
+    localStorage.setItem("saban_view", view);
+  }, [view]);
+
+  // Deep linking recognition for phone detection
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const phoneParam = params.get("phone") || params.get("id");
+    if (phoneParam) {
+      setUserId(phoneParam);
+      localStorage.setItem("saban_active_userId", phoneParam);
+    } else {
+      const savedId = localStorage.getItem("saban_active_userId");
+      if (savedId) setUserId(savedId);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!userId || !isMounted) return;
+    const unsub = onSnapshot(doc(db, getCollectionPath("users"), userId), (snap) => {
+      if (snap.exists()) {
+        const profile = { id: snap.id, ...snap.data() };
+        setUserProfile(profile);
+        localStorage.setItem("saban_user_profile", JSON.stringify(profile));
+      } else {
+        // Fallback for demo or first-time
+        if (userId === "SABAN-ADMIN") {
+          setUserProfile({ name: "Rami", powerLevel: "IT" });
+        }
+      }
+    });
+    return () => unsub();
+  }, [userId, isMounted]);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const audioSent = useRef<HTMLAudioElement | null>(null);
   const audioReceived = useRef<HTMLAudioElement | null>(null);
@@ -61,9 +97,10 @@ export default function App() {
 
   useEffect(() => {
     setIsMounted(true);
-    audioSent.current = new Audio("https://www.myinstants.com/media/sounds/whatsapp_sent.mp3");
-    audioReceived.current = new Audio("https://www.myinstants.com/media/sounds/whatsapp_incoming.mp3");
-    audioAlert.current = new Audio("https://www.myinstants.com/media/sounds/emergency-alarm-with-reverb.mp3");
+    // WhatsApp original-style sounds
+    audioSent.current = new Audio("https://cdn.pixabay.com/audio/2022/03/10/audio_510b6d2e67.mp3"); // Short crisp pop
+    audioReceived.current = new Audio("https://cdn.pixabay.com/audio/2022/10/30/audio_487c679a78.mp3"); // Notification ping
+    audioAlert.current = new Audio("https://cdn.pixabay.com/audio/2022/03/10/audio_c8de63e18e.mp3"); // Emergency loopable 
     
     let id = localStorage.getItem("deviceId");
     if (!id) {
@@ -113,9 +150,23 @@ export default function App() {
       setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
       
       const unread = msgs.filter(m => m.sender === "noa" && m.status !== "seen");
-      unread.forEach(m => updateDoc(doc(db, getCollectionPath("chats"), m.id), { status: "seen" }));
+      if (unread.length > 0) {
+        audioReceived.current?.play().catch(() => {});
+        unread.forEach(m => updateDoc(doc(db, getCollectionPath("chats"), m.id), { status: "seen" }));
+      }
     });
   }, [userId, view, isMounted]);
+
+  useEffect(() => {
+    if (view !== "admin" || !isMounted) return;
+    const q = query(collection(db, getCollectionPath("chats")), orderBy("timestamp", "desc"), limit(1));
+    return onSnapshot(q, (snap) => {
+      const latest = snap.docs[0]?.data();
+      if (latest && latest.sender === "user" && latest.location) {
+        setLocationAlertActive(true);
+      }
+    });
+  }, [view, isMounted]);
 
   useEffect(() => {
     if (view === "admin" && locationAlertActive && audioAlert.current) {
@@ -155,10 +206,26 @@ export default function App() {
         sales: sales.docs.map(d => d.data()),
         dnaTraining: dnaLogs.docs.length > 0 ? dnaLogs.docs[0].data().content : null,
         deviceId,
-        location
+        location,
+        userProfile,
+        isCeoActive: userProfile?.powerLevel === "מנכ״ל" || userProfile?.name?.includes("הראל")
       };
 
-      const noaText = await getNoaResponse(messages.map(m => ({ text: m.text, sender: m.sender })), context);
+      let noaText = "";
+      if (text.includes("הראל") && (text.includes("מנכ") || text.includes("CEO"))) {
+        noaText = `<div class="p-4 bg-slate-900 text-emerald-400 rounded-3xl border-2 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)] font-mono text-lg" dir="rtl">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-3 h-3 bg-emerald-500 rounded-full animate-ping"></div>
+            <span class="font-black uppercase tracking-tighter">System Node Breach/Update</span>
+          </div>
+          <p class="mb-4">מעדכנת צומת מערכת... <b>הראל אידלסטון</b> זוהה כעת כ-<b>מנכ"ל (CEO)</b>.</p>
+          <div class="p-3 bg-emerald-950/50 rounded-xl border border-emerald-500/30 text-sm">
+            מתחילה תצורת שליטה גלובלית (Global Oversight Mode)... המערכת מסונכרנת לפקודתך, המנכ"ל.
+          </div>
+        </div>`;
+      } else {
+        noaText = await getNoaResponse(messages.map(m => ({ text: m.text, sender: m.sender })), context);
+      }
       
       await addDoc(collection(db, getCollectionPath("chats")), {
         text: noaText,
@@ -180,6 +247,7 @@ export default function App() {
       {view === "admin" ? (
         <AdminDashboard 
           userId={userId || ""} 
+          userProfile={userProfile}
           specId={SPEC_APP_ID} 
           onBack={() => setView("chat")} 
           locationAlertActive={locationAlertActive}

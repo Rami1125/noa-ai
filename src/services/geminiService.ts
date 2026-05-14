@@ -47,8 +47,10 @@ export async function getNoaResponse(history: { text: string; sender: "user" | "
   try {
     const userDna = context?.userProfile ? `
 ---
-CLIENT DNA (PERSONALITY PROFILE):
-${JSON.stringify(context.userProfile)}
+CLIENT DNA & BEHAVIORAL PROFILE:
+Identity: ${JSON.stringify(context.userProfile)}
+Custom Rules for this User: ${context.userProfile.customRules || "No special rules."}
+Personality Detected (Image Analysis): ${context.userProfile.dna?.personality || "Standard"}
 ---
 ` : "";
 
@@ -68,27 +70,40 @@ SIMULATION MODE ACTIVE:
 המשתמש שאת מדברת איתו הוא: ${context.employeeName || "מועמד"}.
 תפקיד המטרה (Target Role): ${context.targetRole || "דלפק"}.
 התאימי את הטון שלך בהתאם לתפקיד:
-- מנהל חנות/מנכ"ל: טון עסקי, חד, מכירתי, מוכוון תוצאות.
+- מנכ"ל: טון סמכותי, אקזקיוטיבי, ישקף שליטה מלאה (Authority = Max). תמיד פני אליו כ"שלום המנכ"ל הראל" או "הראל, המערכת מסונכרנת לפקודתך".
+- מנהל חנות: טון עסקי, חד, מכירתי, מוכוון תוצאות.
 - מחסן/סידור: טון טכני, ישיר, לוגיסטי, ברור.
 - דלפק/רכש: טון שירותי אך מקצועי, בקיא במחירים ומפרטים.
+---
+` : "";
+
+    const ceoProtocol = context?.isCeoActive ? `
+---
+CEO IDENTITY PROTOCOL (HAREL IDELSTON):
+המנהל הנוכחי הוא הראל אידלסטון (Harel Idelston).
+תפקיד: מנכ"ל (CEO).
+סטטוס: שליטה גלובלית (Global Oversight Mode).
+טון: סמכותי אך משפחתי (Saban-Family Direct).
+יכולות: צפייה במכירות גלובליות, ניהול דרגות כוח, אישור רכש HQ, צפייה בלוגים של כל הסניפים.
+בכל פעם שהראל פונה אלייך, פני אליו בכבוד הראוי למנכ"ל.
 ---
 ` : "";
 
     const contextInfo = context ? `
 ---
 LOGISTICS & SYSTEM CONTEXT:
-${JSON.stringify({ ...context, userProfile: undefined, dnaTraining: undefined, simulationMode: undefined, targetRole: undefined, employeeName: undefined })}
+${JSON.stringify({ ...context, userProfile: undefined, dnaTraining: undefined, simulationMode: undefined, targetRole: undefined, employeeName: undefined, isCeoActive: undefined })}
 ---
 ` : "";
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash",
       contents: history.map(h => ({
         role: h.sender === "user" ? "user" : "model",
         parts: [{ text: h.text }]
       })),
       config: {
-        systemInstruction: SYSTEM_PROMPT + userDna + dnaContext + simulationContext + contextInfo + `\nCRITICAL UI CONSTRAINT: Ensure font-size is 18px or larger in your HTML. All clickable elements must have a minimum target size of 56px. OUTPUT RAW HTML STRING ONLY. NO MARKDOWN.`,
+        systemInstruction: SYSTEM_PROMPT + userDna + dnaContext + simulationContext + ceoProtocol + contextInfo + `\nCRITICAL UI CONSTRAINT: Ensure font-size is 18px or larger in your HTML. All clickable elements must have a minimum target size of 56px. OUTPUT RAW HTML STRING ONLY. NO MARKDOWN.`,
       },
     });
 

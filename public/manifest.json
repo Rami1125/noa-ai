@@ -1,0 +1,17 @@
+{
+  "name": "ח.סבן קונקט",
+  "short_name": "SabanConnect",
+  "description": "מערכת ההפעלה של ח.סבן - ניהול, סחר ותקשורת חכמה",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1E293B",
+  "theme_color": "#1E293B",
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/qqLm9M5t/Gemini-Generated-Image-gmd5k7gmd5k7gmd5.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
