@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Chat History Path
+    // Path: /artifacts/saban-connect/users/{userId}/chat_history/{messageId}
+    match /artifacts/saban-connect/users/{userId}/chat_history/{messageId} {
+      
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(uid) {
+        return isSignedIn() && request.auth.uid == uid;
+      }
+
+      function isValidMessage(data) {
+        return data.text is string && data.text.size() <= 10000 &&
+               data.sender in ["user", "noa"] &&
+               data.status in ["sent", "delivered", "seen"] &&
+               data.timestamp == request.time &&
+               (!('reactions' in data) || data.reactions is list);
+      }
+
+      allow read: if isOwner(userId);
+      
+      allow create: if isOwner(userId) && isValidMessage(request.resource.data);
+      
+      allow delete: if isOwner(userId);
+      
+      // Updates usually not needed for chat messages in this simple app, 
+      // but allow status updates and reactions.
+      allow update: if isOwner(userId) && 
+                    (
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+                      request.resource.data.status in ["sent", "delivered", "seen"]
+                    ) || (
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']) &&
+                      request.resource.data.reactions is list
+                    );
+    }
+  }
+}

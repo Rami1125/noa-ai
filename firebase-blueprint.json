@@ -1,0 +1,53 @@
+{
+  "entities": {
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Represents a single message in the chat session.",
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "The content of the message (can be HTML)."
+        },
+        "sender": {
+          "type": "string",
+          "enum": ["user", "noa"],
+          "description": "Who sent the message."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the message was sent."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["sent", "delivered", "seen"],
+          "description": "WhatsApp-style message status."
+        },
+        "reactions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of emoji reactions."
+        }
+      },
+      "required": ["text", "sender", "timestamp", "status"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Basic user profile information.",
+      "type": "object",
+      "properties": {
+        "lastSeen": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  },
+  "firestore": {
+    "chat_history": {
+      "schema": "ChatMessage",
+      "description": "Stores messages for a specific user. Path: /artifacts/{appId}/users/{userId}/chat_history/{messageId}"
+    }
+  }
+}
