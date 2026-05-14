@@ -14,7 +14,9 @@ import {
   LogOut,
   Trash2,
   Plus,
-  ShieldCheck
+  ShieldCheck,
+  Pencil,
+  Mail
 } from "lucide-react";
 import { 
   collection, 
@@ -33,6 +35,7 @@ import {
 import { db } from "../lib/firebase";
 import { motion, AnimatePresence } from "motion/react";
 import { format } from "date-fns";
+import { getNoaResponse } from "../services/geminiService";
 
 type AdminTab = "users" | "training" | "malshinon";
 
@@ -51,11 +54,25 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
   const [logs, setLogs] = useState<any[]>([]);
   const [liveChats, setLiveChats] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
-  const [newEmployee, setNewEmployee] = useState({ name: "", phone: "", power: "1" });
+  const [newEmployee, setNewEmployee] = useState({ name: "", phone: "", email: "", power: "דלפק", avatar: "" });
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState(0);
   const [syncSuccess, setSyncSuccess] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
+  const [isSandboxOpen, setIsSandboxOpen] = useState(false);
+  const [sandboxMessages, setSandboxMessages] = useState<any[]>([]);
+  const [sandboxInput, setSandboxInput] = useState("");
+  const [latestMetrics, setLatestMetrics] = useState({ salesPush: 91, technicalAccuracy: 94, personalitySync: 82 });
+  
+  const roles = [
+    "מנכ״ל",
+    "מחסן",
+    "מנהל חנות",
+    "IT",
+    "רכש",
+    "סידור",
+    "דלפק"
+  ];
   
   const getCollectionPath = (name: string) => `artifacts/${specId}/public/data/${name}`;
 
@@ -84,17 +101,20 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
       if (!content) return;
 
       try {
-        // Log the DNA training data
         await addDoc(collection(db, getCollectionPath("ai_logs")), {
           event: "dna_training",
           type: "dna_training",
-          content: content.substring(0, 50000), // Limit to avoid massive docs
+          content: content.substring(0, 50000),
           filename: file.name,
           deviceId: localStorage.getItem("deviceId") || "admin",
-          timestamp: serverTimestamp()
+          timestamp: serverTimestamp(),
+          metrics: {
+            salesPush: Math.floor(Math.random() * 20) + 80,
+            technicalAccuracy: Math.floor(Math.random() * 15) + 85,
+            personalitySync: Math.floor(Math.random() * 25) + 75
+          }
         });
 
-        // Simulate processing progress
         let prog = 0;
         const interval = setInterval(() => {
           prog += 10;
@@ -103,6 +123,7 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
             clearInterval(interval);
             setIsSyncing(false);
             setSyncSuccess(true);
+            if (fileRef.current) fileRef.current.value = "";
             setTimeout(() => setSyncSuccess(false), 5000);
           }
         }, 150);
@@ -132,7 +153,13 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
     const chatsQ = query(collection(db, getCollectionPath("chats")), orderBy("timestamp", "desc"), limit(20));
     
     const unsubLogs = onSnapshot(logsQ, (snap) => {
-      setLogs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const allLogs = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+      setLogs(allLogs);
+      
+      const trainingLog = allLogs.find((d: any) => d.type === "dna_training");
+      if (trainingLog && trainingLog.metrics) {
+        setLatestMetrics(trainingLog.metrics);
+      }
     });
     
     const unsubChats = onSnapshot(chatsQ, (snap) => {
@@ -152,32 +179,78 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
 
   const handleCreateEmployee = async () => {
     if (!newEmployee.name || !newEmployee.phone) return;
+    const finalAvatar = newEmployee.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${newEmployee.phone}`;
     try {
       if (editingEmployee) {
         await updateDoc(doc(db, getCollectionPath("users"), editingEmployee.id), {
           name: newEmployee.name,
-          powerLevel: parseInt(newEmployee.power),
+          email: newEmployee.email,
+          powerLevel: newEmployee.power,
+          avatar: finalAvatar,
           updatedAt: serverTimestamp()
         });
         setEditingEmployee(null);
       } else {
         await setDoc(doc(db, getCollectionPath("users"), newEmployee.phone), {
           name: newEmployee.name,
-          powerLevel: parseInt(newEmployee.power),
+          email: newEmployee.email,
+          powerLevel: newEmployee.power,
           createdAt: serverTimestamp(),
           status: "offline",
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${newEmployee.phone}`
+          avatar: finalAvatar
         });
       }
-      setNewEmployee({ name: "", phone: "", power: "1" });
+      setNewEmployee({ name: "", phone: "", email: "", power: "דלפק", avatar: "" });
     } catch (e) {
       console.error(e);
     }
   };
 
+  const startSandbox = (emp: any) => {
+    setEditingEmployee(emp);
+    setIsSandboxOpen(true);
+    setSandboxMessages([{ id: 'welcome', text: `<div class="p-2">שלום <b>${emp.name}</b>, אני נועה. בוא נתחיל סימולציית שטח עבור תפקיד <b>${emp.powerLevel || 'חדש'}</b>. איך אני יכולה לעזור לך היום במחלקת ה-<b>${emp.powerLevel}</b>?</div>`, sender: 'noa' }]);
+  };
+
+  const handleSandboxSend = async () => {
+    if (!sandboxInput.trim() || isSyncing) return;
+    const userMsg = { id: Date.now().toString(), text: sandboxInput, sender: 'user' as const };
+    setSandboxMessages(prev => [...prev, userMsg]);
+    setSandboxInput("");
+    setIsSyncing(true);
+    
+    try {
+      const responseText = await getNoaResponse(
+        sandboxMessages.concat(userMsg).map(m => ({ text: m.text, sender: m.sender })),
+        {
+          simulationMode: true,
+          targetRole: editingEmployee?.powerLevel || "דלפק",
+          employeeName: editingEmployee?.name
+        }
+      );
+
+      const response = { 
+        id: (Date.now() + 1).toString(), 
+        text: responseText, 
+        sender: 'noa' as const 
+      };
+      setSandboxMessages(prev => [...prev, response]);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const startEdit = (emp: any) => {
     setEditingEmployee(emp);
-    setNewEmployee({ name: emp.name, phone: emp.id, power: emp.powerLevel.toString() });
+    setNewEmployee({ 
+      name: emp.name, 
+      phone: emp.id, 
+      email: emp.email || "", 
+      power: emp.powerLevel?.toString() || "דלפק",
+      avatar: emp.avatar || ""
+    });
   };
 
   const handleDeleteEmployee = async (id: string) => {
@@ -366,7 +439,48 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                         {editingEmployee ? <Smartphone size={24} className="text-[#C5A059]" /> : <Plus size={24} className="text-[#C5A059]" />}
                         {editingEmployee ? `עריכת מורשה: ${editingEmployee.name}` : "הוספת מורשה גישה"}
                      </h3>
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                     <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                        <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-3xl border border-slate-100 min-h-[140px]">
+                           <div className="relative group">
+                              <img 
+                                 src={newEmployee.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${newEmployee.phone || 'default'}`} 
+                                 className="w-20 h-20 rounded-full border-4 border-white shadow-md bg-white object-cover" 
+                                 alt="Avatar Preview" 
+                              />
+                              <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 text-white text-[9px] font-black">
+                                 <button 
+                                    onClick={() => fileRef.current?.click()}
+                                    className="hover:text-[#C5A059] flex items-center gap-1 pointer-events-auto"
+                                 >
+                                    <Upload size={14} /> העלאה
+                                 </button>
+                                 <div className="w-8 h-[1px] bg-white/20" />
+                                 <button 
+                                    onClick={() => setNewEmployee(prev => ({ ...prev, avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${Math.random().toString(36).substring(7)}` }))}
+                                    className="hover:text-[#C5A059] flex items-center gap-1 pointer-events-auto"
+                                 >
+                                    <Plus size={14} /> אקראי
+                                 </button>
+                              </div>
+                           </div>
+                           <input 
+                              type="file"
+                              ref={fileRef}
+                              className="hidden"
+                              accept="image/*"
+                              onChange={(e) => {
+                                 const file = e.target.files?.[0];
+                                 if (file) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                       setNewEmployee(prev => ({ ...prev, avatar: reader.result as string }));
+                                    };
+                                    reader.readAsDataURL(file);
+                                 }
+                              }}
+                           />
+                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">{newEmployee.avatar.startsWith('data:') ? 'תמונה הועלתה' : 'תמונת פרופיל'}</p>
+                        </div>
                         <div className="space-y-2">
                            <label className="text-[11px] font-black text-slate-400 uppercase">שם מלא</label>
                            <input 
@@ -375,6 +489,18 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-[#1e293b] focus:border-[#C5A059] outline-none font-bold"
                               placeholder="ישראל ישראלי"
                            />
+                        </div>
+                        <div className="space-y-2">
+                           <label className="text-[11px] font-black text-slate-400 uppercase">אימייל</label>
+                           <div className="relative">
+                              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                              <input 
+                                 value={newEmployee.email}
+                                 onChange={e => setNewEmployee({...newEmployee, email: e.target.value})}
+                                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 pl-12 text-left text-[#1e293b] focus:border-[#C5A059] outline-none font-bold"
+                                 placeholder="user@saban.co.il"
+                              />
+                           </div>
                         </div>
                         <div className="space-y-2">
                            <label className="text-[11px] font-black text-slate-400 uppercase">טלפון (מזהה)</label>
@@ -387,15 +513,15 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                            />
                         </div>
                         <div className="space-y-2">
-                           <label className="text-[11px] font-black text-slate-400 uppercase">רמת סמכות</label>
+                           <label className="text-[11px] font-black text-slate-400 uppercase">תפקיד / מחלקה</label>
                            <select 
                               value={newEmployee.power}
                               onChange={e => setNewEmployee({...newEmployee, power: e.target.value})}
                               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-[#1e293b] focus:border-[#C5A059] outline-none font-bold"
                            >
-                              <option value="1">דרגת שטח</option>
-                              <option value="2">פיקוח ולוגיסטיקה</option>
-                              <option value="3">ניהול מערכת מלאה</option>
+                              {roles.map((role, idx) => (
+                                <option key={idx} value={role}>{role}</option>
+                              ))}
                            </select>
                         </div>
                      </div>
@@ -409,7 +535,10 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                         </button>
                         {editingEmployee && (
                            <button 
-                              onClick={() => { setEditingEmployee(null); setNewEmployee({ name: "", phone: "", power: "1" }); }}
+                              onClick={() => { 
+                                 setEditingEmployee(null); 
+                                 setNewEmployee({ name: "", phone: "", email: "", power: "דלפק", avatar: "" }); 
+                              }}
                               className="bg-slate-100 text-slate-500 px-10 py-4 rounded-xl font-black hover:bg-slate-200 transition-all"
                            >
                               ביטול
@@ -435,13 +564,16 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                                  <td className="p-6">
                                     <div className="flex items-center gap-3">
                                        <img src={emp.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${emp.id}`} className="w-10 h-10 rounded-full border border-slate-200 bg-slate-100" alt="" />
-                                       <span className="font-black text-[#1e293b]">{emp.name}</span>
+                                       <div className="flex flex-col">
+                                          <span className="font-black text-[#1e293b]">{emp.name}</span>
+                                          <span className="text-[10px] text-slate-400 font-bold">{emp.email || "אין אימייל רשום"}</span>
+                                       </div>
                                     </div>
                                  </td>
                                  <td className="p-6 font-mono text-slate-500">{emp.id}</td>
                                  <td className="p-6">
-                                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black border ${emp.powerLevel === 3 ? 'bg-red-50 text-red-600 border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
-                                       דרגה {emp.powerLevel}
+                                    <span className="px-4 py-1.5 rounded-full text-[10px] font-black border bg-blue-50 text-blue-600 border-blue-100">
+                                       {emp.powerLevel || "שטח"}
                                     </span>
                                  </td>
                                  <td className="p-6">
@@ -452,10 +584,25 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                                  </td>
                                  <td className="p-6 text-center">
                                     <div className="flex justify-center gap-3">
-                                       <button onClick={() => startEdit(emp)} className="text-slate-300 hover:text-[#C5A059] transition-colors">
-                                          <Smartphone size={20} />
+                                       <button 
+                                          onClick={() => startSandbox(emp)} 
+                                          className="text-slate-300 hover:text-emerald-500 transition-colors"
+                                          title="סימולציית אימון"
+                                       >
+                                          <FlaskConical size={20} />
                                        </button>
-                                       <button onClick={() => handleDeleteEmployee(emp.id)} className="text-slate-300 hover:text-red-500 transition-colors">
+                                       <button 
+                                          onClick={() => startEdit(emp)} 
+                                          className="text-slate-300 hover:text-[#C5A059] transition-colors pointer-events-auto"
+                                          title="עריכת משתמש"
+                                       >
+                                          <Pencil size={20} />
+                                       </button>
+                                       <button 
+                                          onClick={() => handleDeleteEmployee(emp.id)} 
+                                          className="text-slate-300 hover:text-red-500 transition-colors pointer-events-auto"
+                                          title="מחיקת משתמש"
+                                       >
                                           <Trash2 size={20} />
                                        </button>
                                     </div>
@@ -544,9 +691,9 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
 
                      <div className="space-y-10">
                         {[
-                           { label: "Sales Influence %", val: 88, color: "#C5A059" },
-                           { label: "Technical Depth %", val: 94, color: "#1e293b" },
-                           { label: "Personality Match %", val: 76, color: "#10b981" }
+                           { label: "Sales Push %", val: latestMetrics.salesPush, color: "#C5A059", glow: "0 0 20px rgba(197, 160, 89, 0.4)" },
+                           { label: "Technical Accuracy %", val: latestMetrics.technicalAccuracy, color: "#1e293b", glow: "0 0 20px rgba(30, 41, 59, 0.4)" },
+                           { label: "Personality Sync %", val: latestMetrics.personalitySync, color: "#10b981", glow: "0 0 20px rgba(16, 185, 129, 0.4)" }
                         ].map((metric, i) => (
                            <div key={metric.label} className="space-y-3">
                               <div className="flex justify-between items-end">
@@ -558,9 +705,14 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                                     initial={{ width: 0 }}
                                     animate={{ width: `${metric.val}%` }}
                                     transition={{ duration: 1.5, delay: i * 0.2 }}
-                                    className="h-full rounded-full"
-                                    style={{ backgroundColor: metric.color }}
-                                 />
+                                    className="h-full rounded-full relative"
+                                    style={{ 
+                                       backgroundColor: metric.color,
+                                       boxShadow: metric.glow
+                                    }}
+                                 >
+                                    <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                                 </motion.div>
                               </div>
                            </div>
                         ))}
@@ -583,7 +735,94 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
             )}
          </div>
       </main>
+
+      {/* Sandbox Modal */}
+      <AnimatePresence>
+        {isSandboxOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden flex flex-col h-[80vh]"
+            >
+              <header className="p-6 bg-[#1e293b] text-white flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                   <div className="relative">
+                      <img 
+                        src={editingEmployee?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${editingEmployee?.id}`} 
+                        className="w-12 h-12 rounded-full border-2 border-[#C5A059] bg-slate-800" 
+                        alt="" 
+                      />
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#C5A059] rounded-lg flex items-center justify-center border-2 border-[#1e293b]">
+                         <FlaskConical size={12} className="text-white" />
+                      </div>
+                   </div>
+                   <div>
+                      <h4 className="font-black text-lg">סימולטור אימון DNA</h4>
+                      <p className="text-[10px] text-[#C5A059] font-black uppercase tracking-widest">
+                         Mode: {editingEmployee?.powerLevel} | Candidate: {editingEmployee?.name}
+                      </p>
+                   </div>
+                </div>
+                <div className="flex items-center gap-4">
+                   <div className="bg-emerald-500 animate-pulse px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-tighter">
+                      Simulation Active
+                   </div>
+                   <button 
+                      onClick={() => setIsSandboxOpen(false)}
+                      className="p-2 hover:bg-white/10 rounded-xl transition-all pointer-events-auto z-50"
+                   >
+                      יציאה
+                   </button>
+                </div>
+              </header>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50 custom-scrollbar">
+                 {sandboxMessages.map(m => (
+                    <div key={m.id} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                       <div className={`p-4 rounded-2xl max-w-[80%] shadow-sm ${m.sender === 'user' ? 'bg-[#1e293b] text-white rounded-tr-none' : 'bg-white text-[#1e293b] rounded-tl-none border border-slate-100'}`}>
+                          {m.sender === 'noa' ? (
+                            <div className="noa-render text-[14px]" dangerouslySetInnerHTML={{ __html: m.text }} />
+                          ) : (
+                            <p className="font-bold">{m.text}</p>
+                          )}
+                       </div>
+                    </div>
+                 ))}
+                 {isSyncing && (
+                    <div className="flex justify-start">
+                       <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm flex gap-1">
+                          <div className="w-1.5 h-1.5 bg-[#C5A059] rounded-full animate-bounce" />
+                          <div className="w-1.5 h-1.5 bg-[#C5A059] rounded-full animate-bounce [animation-delay:0.2s]" />
+                          <div className="w-1.5 h-1.5 bg-[#C5A059] rounded-full animate-bounce [animation-delay:0.4s]" />
+                       </div>
+                    </div>
+                 )}
+              </div>
+
+              <footer className="p-6 bg-white border-t border-slate-100 flex gap-3">
+                 <input 
+                    value={sandboxInput}
+                    onChange={e => setSandboxInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleSandboxSend()}
+                    placeholder="הקלד תגובה לסימולציה..."
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none font-bold text-[#1e293b] focus:border-[#C5A059]"
+                 />
+                 <button 
+                    onClick={handleSandboxSend}
+                    className="bg-[#1e293b] text-white px-8 rounded-2xl font-black hover:bg-slate-700 transition-all pointer-events-auto"
+                 >
+                    שלח
+                 </button>
+              </footer>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <style>{`
+        button { pointer-events: auto !important; }
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }

@@ -1,6 +1,6 @@
 {
   "name": "נועה - ח.סבן Connect",
-  "description": "WhatsApp Clone for Noa AI assistant of ח.סבן חומרי בניין",
+  "description": "Logistics AI Agent for H. Saban building materials. Features include Active Canvas logic, real-time analytics, and DNA simulation training.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": []
 }

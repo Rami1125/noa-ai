@@ -61,10 +61,23 @@ ${context.dnaTraining.substring(0, 10000)}
 ---
 ` : "";
 
+    const simulationContext = context?.simulationMode ? `
+---
+SIMULATION MODE ACTIVE:
+את כרגע בסימולציית אימון בתוך "כספת הניהול". 
+המשתמש שאת מדברת איתו הוא: ${context.employeeName || "מועמד"}.
+תפקיד המטרה (Target Role): ${context.targetRole || "דלפק"}.
+התאימי את הטון שלך בהתאם לתפקיד:
+- מנהל חנות/מנכ"ל: טון עסקי, חד, מכירתי, מוכוון תוצאות.
+- מחסן/סידור: טון טכני, ישיר, לוגיסטי, ברור.
+- דלפק/רכש: טון שירותי אך מקצועי, בקיא במחירים ומפרטים.
+---
+` : "";
+
     const contextInfo = context ? `
 ---
 LOGISTICS & SYSTEM CONTEXT:
-${JSON.stringify({ ...context, userProfile: undefined, dnaTraining: undefined })}
+${JSON.stringify({ ...context, userProfile: undefined, dnaTraining: undefined, simulationMode: undefined, targetRole: undefined, employeeName: undefined })}
 ---
 ` : "";
 
@@ -75,7 +88,7 @@ ${JSON.stringify({ ...context, userProfile: undefined, dnaTraining: undefined })
         parts: [{ text: h.text }]
       })),
       config: {
-        systemInstruction: SYSTEM_PROMPT + userDna + dnaContext + contextInfo + `\nCRITICAL UI CONSTRAINT: Ensure font-size is 18px or larger in your HTML. All clickable elements must have a minimum target size of 56px. OUTPUT RAW HTML STRING ONLY. NO MARKDOWN.`,
+        systemInstruction: SYSTEM_PROMPT + userDna + dnaContext + simulationContext + contextInfo + `\nCRITICAL UI CONSTRAINT: Ensure font-size is 18px or larger in your HTML. All clickable elements must have a minimum target size of 56px. OUTPUT RAW HTML STRING ONLY. NO MARKDOWN.`,
       },
     });
 
