@@ -72,8 +72,11 @@ ${JSON.stringify({ ...context, userProfile: undefined })}
 
     let text = response.text || "מצטערת, לא הצלחתי לעבד את הבקשה.";
     
-    // Post-processing to ensure no markdown leak
-    text = text.replace(/```html/g, "").replace(/```/g, "").trim();
+    // Strict post-processing to remove any markdown indicators
+    text = text.replace(/```html/gi, "")
+               .replace(/```/g, "")
+               .replace(/^(html)/i, "")
+               .trim();
     
     return text;
   } catch (error) {
