@@ -105,6 +105,10 @@ Harel's Personal Context: Married + 4. Multi-generational stage (from education 
 ---
 `;
 
+    if (history.length === 0) {
+      return "שלום! איך אוכל לעזור לך היום?";
+    }
+
     const response = await ai.models.generateContent({
       model: "gemini-flash-latest",
       contents: history.map(h => ({

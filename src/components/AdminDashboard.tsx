@@ -48,9 +48,11 @@ interface AdminDashboardProps {
   onBack: () => void;
   locationAlertActive: boolean;
   onDismissAlert: () => void;
+  isSimulationMode: boolean;
+  onToggleSimulation: () => void;
 }
 
-export default function AdminDashboard({ specId, onBack, locationAlertActive, onDismissAlert, userProfile }: AdminDashboardProps) {
+export default function AdminDashboard({ specId, onBack, locationAlertActive, onDismissAlert, userProfile, isSimulationMode, onToggleSimulation }: AdminDashboardProps) {
   const [isVaultLocked, setIsVaultLocked] = useState(true);
   const [vaultPassword, setVaultPassword] = useState("");
   const [activeTab, setActiveTab] = useState<AdminTab>("malshinon");
@@ -401,6 +403,21 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
             <FlaskConical size={20} />
             <span className="font-bold">מעבדת DNA סוכן</span>
           </button>
+
+          <div className="pt-4 mt-4 border-t border-white/10">
+             <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
+                <div className="flex flex-col">
+                   <span className="text-xs font-bold text-[#C5A059] uppercase tracking-widest">Simulation Mode</span>
+                   <span className="text-[10px] text-white/50">Sandboxed Environment</span>
+                </div>
+                <button 
+                  onClick={onToggleSimulation}
+                  className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${isSimulationMode ? "bg-amber-500" : "bg-slate-700"}`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-300 ${isSimulationMode ? "right-7" : "right-1"}`} />
+                </button>
+             </div>
+          </div>
         </nav>
 
         <div className="p-6 border-t border-white/10">
@@ -442,12 +459,12 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
          </header>
 
          {/* Content View */}
-         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
             {activeTab === "malshinon" && (
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Activity Log */}
-                  <div className="bg-white rounded-[32px] border border-slate-200 shadow-xl overflow-hidden backdrop-blur-[10px]">
-                     <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+               <div className="flex flex-col gap-6">
+                  {/* Activity Log Card */}
+                  <div className="bg-white rounded-[24px] border border-slate-200 shadow-lg overflow-hidden flex flex-col">
+                     <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-slate-50/50">
                         <h3 className="font-black text-[#1e293b] flex items-center gap-3">
                            <Activity size={18} className="text-[#C5A059]" />
                            לוג פעילות מערכת
@@ -455,28 +472,28 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                         <button 
                            onClick={syncAllCollections}
                            disabled={isSyncing}
-                           className="bg-[#1e293b] text-white px-6 py-2 rounded-xl font-black hover:bg-slate-700 transition-all flex items-center gap-2 text-xs"
+                           className="w-full sm:w-auto bg-[#1e293b] text-white px-5 py-3 rounded-xl font-black hover:bg-slate-700 transition-all flex items-center justify-center gap-2 text-xs h-12"
                         >
                            <Activity size={14} className={isSyncing ? "animate-spin" : ""} />
-                           {isSyncing ? `מסנכרן ${syncProgress}%` : "סנכרון מלא 19 מאגרים"}
+                           {isSyncing ? `סנכרון ${syncProgress}%` : "סנכרון מלא 19 מאגרים"}
                         </button>
                      </div>
-                     <div className="p-4 h-[600px] overflow-y-auto space-y-3 font-mono text-[12px]">
+                     <div className="p-2 h-[400px] overflow-y-auto space-y-2 custom-scrollbar font-mono text-[11px]">
                         {logs.map((log) => (
-                           <div key={log.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-[#C5A059]/40 transition-all">
-                              <div className="flex justify-between mb-2">
-                                 <span className="text-[#1e293b] font-black">[{log.event?.toUpperCase()}]</span>
-                                 <span className="text-slate-400">{log.timestamp ? format(log.timestamp.toDate(), "HH:mm:ss") : "--"}</span>
+                           <div key={log.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-[#C5A059]/40 transition-all">
+                              <div className="flex justify-between mb-1">
+                                 <span className="text-[#1e293b] font-black text-[10px]">[{log.event?.toUpperCase()}]</span>
+                                 <span className="text-slate-400 text-[9px]">{log.timestamp ? format(log.timestamp.toDate(), "HH:mm:ss") : "--"}</span>
                               </div>
                               <div className="space-y-1 text-slate-600">
                                  <p className="flex items-center gap-2">
-                                    <Smartphone size={12} />
-                                    <span>מזהה מכשיר:</span> <span className="font-bold">{log.deviceId}</span>
+                                    <Smartphone size={10} />
+                                    <span>מזהה:</span> <span className="font-bold truncate max-w-[150px]">{log.deviceId}</span>
                                  </p>
                                  {log.location && (
                                     <p className="flex items-center gap-2 text-red-500/80">
-                                       <MapPin size={12} />
-                                       <span>נ"צ:</span> <span>{log.location.lat.toFixed(5)}, {log.location.lng.toFixed(5)}</span>
+                                       <MapPin size={10} />
+                                       <span>נ"צ:</span> <span className="text-[9px]">{log.location.lat.toFixed(4)}, {log.location.lng.toFixed(4)}</span>
                                     </p>
                                  )}
                               </div>
@@ -485,22 +502,22 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                      </div>
                   </div>
 
-                  {/* Live Chat Sessions */}
-                  <div className="bg-white rounded-[32px] border border-slate-200 shadow-xl overflow-hidden">
-                     <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                  {/* Live Chat Sessions Card */}
+                  <div className="bg-white rounded-[24px] border border-slate-200 shadow-lg overflow-hidden flex flex-col">
+                     <div className="p-5 border-b border-slate-100 bg-slate-50/50">
                         <h3 className="font-black text-[#1e293b] flex items-center gap-3">
                            <History size={18} className="text-[#C5A059]" />
                            יירוט שיחות בזמן אמת
                         </h3>
                      </div>
-                     <div className="p-6 h-[600px] overflow-y-auto space-y-6 bg-slate-50/30">
+                     <div className="p-4 h-[400px] overflow-y-auto space-y-4 bg-slate-50/30 custom-scrollbar">
                         {liveChats.map((chat) => (
-                           <div key={chat.id} className={`p-4 rounded-2xl text-[14px] shadow-sm border ${chat.sender === 'user' ? 'bg-white mr-8 rounded-tr-none border-slate-100' : 'bg-[#e2e8f0] ml-8 rounded-tl-none border-slate-200'}`}>
-                              <div className="flex justify-between items-center mb-1 text-[10px] font-black opacity-50">
+                           <div key={chat.id} className={`p-3 rounded-2xl text-[13px] shadow-sm border ${chat.sender === 'user' ? 'bg-white mr-6 rounded-tr-none border-slate-100' : 'bg-[#e2e8f0] ml-6 rounded-tl-none border-slate-200'}`}>
+                              <div className="flex justify-between items-center mb-1 text-[9px] font-black opacity-40">
                                  <span>{chat.sender === 'user' ? 'CLIENT_LINK' : 'NOA_AI'}</span>
                                  <span>{chat.timestamp ? format(chat.timestamp.toDate(), "HH:mm:ss") : ""}</span>
                               </div>
-                              <p className="font-bold leading-relaxed">{chat.text}</p>
+                              <p className="font-bold leading-tight">{chat.text}</p>
                            </div>
                         ))}
                      </div>
@@ -509,224 +526,120 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
             )}
 
             {activeTab === "users" && (
-               <div className="space-y-8 max-w-5xl">
-                  <div className="bg-white p-10 rounded-[40px] border border-slate-200 shadow-xl">
-                     <h3 className="text-xl font-black mb-8 flex items-center gap-3 text-[#1e293b]">
-                        {editingEmployee ? <Smartphone size={24} className="text-[#C5A059]" /> : <Plus size={24} className="text-[#C5A059]" />}
+               <div className="flex flex-col gap-6 w-full">
+                  <div className="bg-white p-6 rounded-[24px] border border-slate-200 shadow-lg">
+                     <h3 className="text-lg font-black mb-6 flex items-center gap-3 text-[#1e293b]">
+                        {editingEmployee ? <Pencil size={20} className="text-[#C5A059]" /> : <Plus size={20} className="text-[#C5A059]" />}
                         {editingEmployee ? `עריכת מורשה: ${editingEmployee.name}` : "הוספת מורשה גישה"}
                      </h3>
-                     <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-                        <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-3xl border border-slate-100 min-h-[140px]">
-                           <div className="relative group">
+                     <div className="flex flex-col gap-5">
+                        <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                           <div className="relative group cursor-pointer" onClick={() => fileRef.current?.click()}>
                               <img 
                                  src={newEmployee.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${newEmployee.phone || 'default'}`} 
                                  className="w-20 h-20 rounded-full border-4 border-white shadow-md bg-white object-cover" 
-                                 alt="Avatar Preview" 
+                                 alt="Avatar" 
                               />
-                              <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 text-white text-[9px] font-black">
-                                 <button 
-                                    onClick={() => fileRef.current?.click()}
-                                    className="hover:text-[#C5A059] flex items-center gap-1 pointer-events-auto"
-                                 >
-                                    <Upload size={14} /> העלאה
-                                 </button>
-                                 <div className="w-8 h-[1px] bg-white/20" />
-                                 <button 
-                                    onClick={() => setNewEmployee(prev => ({ ...prev, avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${Math.random().toString(36).substring(7)}` }))}
-                                    className="hover:text-[#C5A059] flex items-center gap-1 pointer-events-auto"
-                                 >
-                                    <Plus size={14} /> אקראי
-                                 </button>
+                              <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                 <Upload size={20} />
                               </div>
                            </div>
-                           <input 
-                              type="file"
-                              ref={fileRef}
-                              className="hidden"
-                              accept="image/*"
-                              onChange={(e) => {
-                                 const file = e.target.files?.[0];
-                                 if (file) {
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => {
-                                       setNewEmployee(prev => ({ ...prev, avatar: reader.result as string }));
-                                    };
-                                    reader.readAsDataURL(file);
-                                 }
-                              }}
-                           />
-                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">{newEmployee.avatar.startsWith('data:') ? 'תמונה הועלתה' : 'תמונת פרופיל'}</p>
+                           <p className="text-[10px] font-black text-slate-400 uppercase mt-2">שינוי תמונה</p>
                         </div>
-                        <div className="space-y-2">
-                           <label className="text-[11px] font-black text-slate-400 uppercase">שם מלא</label>
+                        
+                        <div className="space-y-1">
+                           <label className="text-[10px] font-black text-slate-400 uppercase">שם מלא</label>
                            <input 
                               value={newEmployee.name}
                               onChange={e => setNewEmployee({...newEmployee, name: e.target.value})}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-[#1e293b] focus:border-[#C5A059] outline-none font-bold"
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-[#1e293b] font-bold h-12"
                               placeholder="ישראל ישראלי"
                            />
                         </div>
-                        <div className="space-y-2">
-                           <label className="text-[11px] font-black text-slate-400 uppercase">אימייל</label>
-                           <div className="relative">
-                              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                              <input 
-                                 value={newEmployee.email}
-                                 onChange={e => setNewEmployee({...newEmployee, email: e.target.value})}
-                                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 pl-12 text-left text-[#1e293b] focus:border-[#C5A059] outline-none font-bold"
-                                 placeholder="user@saban.co.il"
-                              />
-                           </div>
+                        
+                        <div className="space-y-1">
+                           <label className="text-[10px] font-black text-slate-400 uppercase">אימייל</label>
+                           <input 
+                              value={newEmployee.email}
+                              onChange={e => setNewEmployee({...newEmployee, email: e.target.value})}
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-left text-[#1e293b] font-bold h-12"
+                              placeholder="user@saban.co.il"
+                           />
                         </div>
-                        <div className="space-y-2">
-                           <label className="text-[11px] font-black text-slate-400 uppercase">טלפון (מזהה)</label>
+
+                        <div className="space-y-1">
+                           <label className="text-[10px] font-black text-slate-400 uppercase">טלפון (מזהה)</label>
                            <input 
                               value={newEmployee.phone}
                               disabled={!!editingEmployee}
                               onChange={e => setNewEmployee({...newEmployee, phone: e.target.value})}
-                              className={`w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-[#1e293b] focus:border-[#C5A059] outline-none font-mono ${editingEmployee ? 'opacity-50' : ''}`}
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-[#1e293b] font-mono h-12"
                               placeholder="05XXXXXXXX"
                            />
                         </div>
-                        <div className="space-y-2">
-                           <label className="text-[11px] font-black text-slate-400 uppercase">תפקיד / מחלקה</label>
+
+                        <div className="space-y-1">
+                           <label className="text-[10px] font-black text-slate-400 uppercase">תפקיד</label>
                            <select 
                               value={newEmployee.power}
                               onChange={e => setNewEmployee({...newEmployee, power: e.target.value})}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-[#1e293b] focus:border-[#C5A059] outline-none font-bold"
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 h-12 text-[#1e293b] font-bold"
                            >
                               {roles.map((role, idx) => (
-                                <option key={idx} value={role}>{role}</option>
+                                <option key={role} value={role}>{role}</option>
                               ))}
                            </select>
                         </div>
-                     </div>
-                     <div className="flex gap-4 mt-8">
-                        <button 
-                           onClick={handleCreateEmployee}
-                           className="bg-[#1e293b] text-white px-10 py-4 rounded-xl font-black hover:bg-slate-700 transition-all flex items-center gap-2"
-                        >
-                           <Save size={18} />
-                           {editingEmployee ? "עדכון פרטים" : "שמירת מורשה גישה"}
-                        </button>
-                        {editingEmployee && (
+
+                        <div className="flex flex-col sm:flex-row gap-3 pt-4">
                            <button 
-                              onClick={() => { 
-                                 setEditingEmployee(null); 
-                                 setNewEmployee({ name: "", phone: "", email: "", power: "דלפק", avatar: "" }); 
-                              }}
-                              className="bg-slate-100 text-slate-500 px-10 py-4 rounded-xl font-black hover:bg-slate-200 transition-all"
+                              onClick={handleCreateEmployee}
+                              className="flex-1 bg-[#1e293b] text-white py-4 rounded-xl font-black h-14 flex items-center justify-center gap-2"
                            >
-                              ביטול
+                              <Save size={18} />
+                              <span>{editingEmployee ? "עדכן" : "שמור"}</span>
                            </button>
-                        )}
+                           {editingEmployee && (
+                              <button 
+                                 onClick={() => { setEditingEmployee(null); setNewEmployee({ name: "", phone: "", email: "", power: "דלפק", avatar: "" }); }}
+                                 className="flex-1 bg-slate-100 text-slate-500 py-4 rounded-xl font-black h-14"
+                              >
+                                 ביטול
+                              </button>
+                           )}
+                        </div>
                      </div>
                   </div>
 
-                  <div className="bg-white rounded-[40px] border border-slate-200 shadow-xl overflow-hidden">
-                     <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-[#1e293b] text-white">
-                        <h3 className="font-black text-xl flex items-center gap-3">
-                           <ShieldCheck size={24} className="text-[#C5A059]" />
-                           Intelligence Report: Personal DNA vs Professional Needs
+                  <div className="bg-white rounded-[24px] border border-slate-200 shadow-lg overflow-hidden">
+                     <div className="p-5 border-b border-slate-100 bg-[#1e293b] text-white">
+                        <h3 className="font-black text-lg flex items-center gap-3">
+                           <ShieldCheck size={20} className="text-[#C5A059]" />
+                           מורשי גישה
                         </h3>
                      </div>
-                     <table className="w-full text-right">
-                        <thead className="bg-[#1e293b] text-white">
-                           <tr className="text-[11px] font-black uppercase tracking-widest text-[#C5A059]">
-                              <th className="p-6">A. תקשורת (Identity)</th>
-                              <th className="p-6">B. חיים אישיים (History)</th>
-                              <th className="p-6">C. DNA מקצועי (SabanOS)</th>
-                              <th className="p-6">סטטוס סוכן</th>
-                              <th className="p-6 text-center">אימון DNA</th>
-                           </tr>
-                        </thead>
-                        <tbody>
-                             {employees.map((emp) => (
-                              <tr key={emp.id} className="border-t border-slate-100 hover:bg-[#C5A059]/5 transition-colors">
-                                 {/* Category A: Communication */}
-                                 <td className="p-6">
-                                    <div className="flex items-center gap-4">
-                                       <div className="relative">
-                                          <img src={emp.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${emp.id}`} className="w-14 h-14 rounded-2xl border-2 border-white shadow-lg bg-white object-cover" alt="" />
-                                          <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${emp.status === 'online' ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                                       </div>
-                                       <div className="flex flex-col">
-                                          <span className="font-black text-lg text-[#1e293b]">{emp.name}</span>
-                                          <span className="text-[11px] text-[#C5A059] font-black uppercase tracking-tight">{emp.id}</span>
-                                          <span className="text-[10px] text-slate-400 font-bold">{emp.email || "MISSING_MAIL"}</span>
-                                       </div>
-                                    </div>
-                                 </td>
-
-                                 {/* Category B: Personal Life */}
-                                 <td className="p-6">
-                                    <div className="space-y-1">
-                                       <div className="flex items-center gap-2">
-                                          <span className="text-[10px] font-black text-slate-400 uppercase">מצב:</span>
-                                          <span className="text-xs font-bold text-[#1e293b]">{emp.personal?.status || "טרם נלמד"}</span>
-                                       </div>
-                                       <div className="flex items-center gap-2">
-                                          <span className="text-[10px] font-black text-slate-400 uppercase">ילדים:</span>
-                                          <span className="text-xs font-bold text-[#1e293b]">{emp.personal?.children || emp.personal?.status === 'נשוי + 4' ? '4' : '0'}</span>
-                                       </div>
-                                       <div className="h-1 w-20 bg-slate-100 rounded-full overflow-hidden mt-2">
-                                          <div className="h-full bg-[#C5A059]" style={{ width: emp.personal?.learningProgress || '20%' }} />
-                                       </div>
-                                    </div>
-                                 </td>
-
-                                 {/* Category C: Professional DNA */}
-                                 <td className="p-6">
-                                    <div className="space-y-2">
-                                       <div className="px-3 py-1 rounded-lg bg-[#1e293b] text-white text-[10px] font-black inline-block uppercase">
-                                          {emp.powerLevel || "AGENT"}
-                                       </div>
-                                       <div className="text-[10px] text-slate-500 font-medium">
-                                          <p>ערכי ליבה: {emp.dna?.coreValues ? 'Family Unity, Continuity' : 'ניהול סחר'}</p>
-                                          <p className="text-[#C5A059] font-bold">גישה עסקית: {emp.dna?.businessApproach ? 'Long-term legacy' : 'אופטימיזציה'}</p>
-                                       </div>
-                                    </div>
-                                 </td>
-
-                                 {/* Status */}
-                                 <td className="p-6">
-                                    <div className="flex flex-col gap-1">
-                                       <div className="flex items-center gap-2 text-xs font-black uppercase">
-                                          <div className={`w-2 h-2 rounded-full ${emp.status === 'online' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-300'}`} />
-                                          {emp.status === 'online' ? 'Active' : 'Offline'}
-                                       </div>
-                                       <span className="text-[10px] text-slate-400 italic">נראה לאחרונה: {emp.lastSeen ? format(emp.lastSeen.toDate(), "HH:mm") : "---"}</span>
-                                    </div>
-                                 </td>
-
-                                 {/* Actions */}
-                                 <td className="p-6">
-                                    <div className="flex justify-center gap-4">
-                                       <button 
-                                          onClick={() => startSandbox(emp)} 
-                                          className="p-3 bg-[#C5A059]/10 text-[#C5A059] rounded-xl hover:bg-[#C5A059] hover:text-white transition-all shadow-sm"
-                                          title="הוראת DNA למערכת"
-                                       >
-                                          <FlaskConical size={20} />
-                                       </button>
-                                       <button 
-                                          onClick={() => startEdit(emp)} 
-                                          className="p-3 bg-slate-100 text-slate-500 rounded-xl hover:bg-[#1e293b] hover:text-white transition-all"
-                                       >
-                                          <Pencil size={20} />
-                                       </button>
-                                       <button 
-                                          onClick={() => handleDeleteEmployee(emp.id)} 
-                                          className="p-3 bg-red-50 text-red-300 rounded-xl hover:bg-red-500 hover:text-white transition-all"
-                                       >
-                                          <Trash2 size={20} />
-                                       </button>
-                                    </div>
-                                 </td>
-                              </tr>
-                           ))}
-                        </tbody>
-                     </table>
+                     <div className="divide-y divide-slate-100">
+                        {employees.map((emp) => (
+                           <div key={emp.id} className="p-4 flex flex-col gap-4 bg-white sm:hover:bg-slate-50 transition-colors">
+                              <div className="flex items-center gap-4">
+                                 <img src={emp.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${emp.id}`} className="w-12 h-12 rounded-xl object-cover border-2 border-slate-100" alt="" />
+                                 <div className="flex-1 min-w-0">
+                                    <h4 className="font-black text-[#1e293b] truncate leading-tight">{emp.name}</h4>
+                                    <p className="text-[10px] text-[#C5A059] font-black uppercase">{emp.powerLevel || "AGENT"}</p>
+                                 </div>
+                                 <div className={`w-2.5 h-2.5 rounded-full ${emp.status === 'online' ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                              </div>
+                              
+                              <div className="flex items-center justify-between border-t border-slate-50 pt-3">
+                                 <div className="flex gap-2">
+                                    <button onClick={() => startSandbox(emp)} className="p-3 bg-[#C5A059]/10 text-[#C5A059] rounded-xl hover:bg-[#C5A059] hover:text-white transition-all"><FlaskConical size={18} /></button>
+                                    <button onClick={() => startEdit(emp)} className="p-3 bg-slate-100 text-slate-500 rounded-xl"><Pencil size={18} /></button>
+                                 </div>
+                                 <button onClick={() => handleDeleteEmployee(emp.id)} className="p-3 bg-red-50 text-red-300 rounded-xl"><Trash2 size={18} /></button>
+                              </div>
+                           </div>
+                        ))}
+                     </div>
                   </div>
                </div>
             )}

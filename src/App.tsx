@@ -10,7 +10,11 @@ import {
   Video, 
   CheckCheck,
   Shield,
-  ShieldAlert
+  ShieldAlert,
+  Trash2,
+  Forward,
+  X,
+  CheckCircle2
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
@@ -63,6 +67,14 @@ export default function App() {
   const [view, setView] = useState<"chat" | "admin">(() => (localStorage.getItem("saban_view") as any) || "chat");
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
   const [locationAlertActive, setLocationAlertActive] = useState(false);
+  const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [isSimulationMode, setIsSimulationMode] = useState(() => localStorage.getItem("saban_simulation_mode") === "true");
+
+  // Persistence logic for Simulation Mode
+  useEffect(() => {
+    localStorage.setItem("saban_simulation_mode", isSimulationMode.toString());
+  }, [isSimulationMode]);
 
   // Persistence logic for view
   useEffect(() => {
@@ -192,18 +204,29 @@ export default function App() {
       const msgs: Message[] = [];
       snap.forEach(doc => {
         const d = doc.data();
-        if (d.userId === userId) msgs.push({ id: doc.id, ...d } as Message);
+        if (d.userId === userId && (!isSimulationMode || d.isSimulation)) {
+          msgs.push({ id: doc.id, ...d } as Message);
+        }
       });
       setMessages(msgs);
-      setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+      
+      // Robust Auto-Scroll
+      const scrollToBottom = () => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+        }
+      };
+      
+      setTimeout(scrollToBottom, 100);
       
       const unread = msgs.filter(m => m.sender === "noa" && m.status !== "seen");
       if (unread.length > 0) {
         audioReceived.current?.play().catch(() => {});
         unread.forEach(m => updateDoc(doc(dbIntelligence, getIntelligencePath("chats"), m.id), { status: "seen" }));
+        setTimeout(scrollToBottom, 500); // Secondary scroll after content renders
       }
     });
-  }, [userId, view, isMounted]);
+  }, [userId, view, isMounted, isSimulationMode]);
 
   useEffect(() => {
     if (view !== "admin" || !isMounted) return;
@@ -237,10 +260,11 @@ export default function App() {
         userId,
         timestamp: serverTimestamp(),
         status: "sent",
-        location
+        location,
+        isSimulation: isSimulationMode
       });
       audioSent.current?.play().catch(() => {});
-      logInteraction("message_sent", { text });
+      logInteraction("message_sent", { text, isSimulation: isSimulationMode });
 
       setIsTyping(true);
 
@@ -284,13 +308,16 @@ export default function App() {
         location,
         userProfile,
         isCeoActive: userProfile?.isCeo || text.includes("הראל"),
+        simulationMode: isSimulationMode,
         metadata: {
           sqlBridge: "ACTIVE",
           driveSync: "VERIFIED",
+          simulation: isSimulationMode ? "ENABLED" : "OFF",
           timestamp: new Date().toISOString()
         }
       };
 
+      const historyForAI = [...messages, { text, sender: "user" as const }];
       let noaText = "";
       if (text.includes("הראל") && (text.includes("מנכ") || text.includes("ceo"))) {
         // Inject Personal DNA into Harel's profile
@@ -323,7 +350,7 @@ export default function App() {
           </div>
         </div>`;
       } else {
-        noaText = await getNoaResponse(messages.map(m => ({ text: m.text, sender: m.sender })), context);
+        noaText = await getNoaResponse(historyForAI, context);
       }
       
       await addDoc(collection(dbIntelligence, getIntelligencePath("chats")), {
@@ -331,12 +358,47 @@ export default function App() {
         sender: "noa",
         userId,
         timestamp: serverTimestamp(),
-        status: "delivered"
+        status: "delivered",
+        isSimulation: isSimulationMode
       });
       audioReceived.current?.play().catch(() => {});
       setIsTyping(false);
-      logInteraction("ai_response", { text: noaText });
+      logInteraction("ai_response", { text: noaText, isSimulation: isSimulationMode });
     } catch (e) { console.error(e); setIsTyping(false); }
+  };
+
+  const toggleMessageSelection = (msgId: string) => {
+    if (!isSelectionMode) {
+      setIsSelectionMode(true);
+      setSelectedMessages([msgId]);
+      return;
+    }
+    setSelectedMessages(prev => 
+      prev.includes(msgId) ? prev.filter(id => id !== msgId) : [...prev, msgId]
+    );
+  };
+
+  const handleForwardMessages = () => {
+    const texts = messages
+      .filter(m => selectedMessages.includes(m.id))
+      .map(m => m.text)
+      .join("\n\n");
+    setInputText(texts);
+    setIsSelectionMode(false);
+    setSelectedMessages([]);
+  };
+
+  const handleDeleteMessages = async () => {
+    if (!window.confirm(`האם למחוק ${selectedMessages.length} הודעות?`)) return;
+    try {
+      const { deleteDoc, doc } = await import("firebase/firestore");
+      await Promise.all(selectedMessages.map(id => 
+        deleteDoc(doc(dbIntelligence, getIntelligencePath("chats"), id))
+      ));
+      logInteraction("messages_deleted", { count: selectedMessages.length });
+    } catch (e) { console.error("Deletion error", e); }
+    setIsSelectionMode(false);
+    setSelectedMessages([]);
   };
 
   if (!isMounted) return <div className="h-screen w-full bg-[#1E293B]" />;
@@ -351,37 +413,60 @@ export default function App() {
           onBack={() => setView("chat")} 
           locationAlertActive={locationAlertActive}
           onDismissAlert={() => setLocationAlertActive(false)}
+          isSimulationMode={isSimulationMode}
+          onToggleSimulation={() => setIsSimulationMode(!isSimulationMode)}
         />
       ) : (
         <div className="w-full h-full flex flex-col bg-[#EDEDED] relative">
           
-          <header className="h-20 bg-[#1E293B] text-white flex items-center px-6 justify-between shadow-xl z-20 flex-shrink-0">
-            <div className="flex items-center gap-4">
-              <div className="relative cursor-pointer" onClick={() => {
-                let c = parseInt(sessionStorage.getItem("admin_clicks") || "0") + 1;
-                sessionStorage.setItem("admin_clicks", c.toString());
-                if (c >= 5) setIsAdminUnlocked(true);
-              }}>
-                <img src={NOA_AVATAR} className="w-12 h-12 rounded-full border-2 border-white/20" alt="Noa" />
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1E293B]"></div>
+          <header className={`h-20 flex items-center px-6 justify-between shadow-xl z-20 flex-shrink-0 transition-all ${isSelectionMode ? "bg-emerald-600 text-white" : "bg-[#1E293B] text-white"}`}>
+            {isSelectionMode ? (
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-4">
+                  <button onClick={() => { setIsSelectionMode(false); setSelectedMessages([]); }} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                    <X size={24} />
+                  </button>
+                  <span className="text-xl font-bold">{selectedMessages.length} נבחרו</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={handleForwardMessages} className="p-3 hover:bg-white/10 rounded-xl transition-colors" title="העבר">
+                    <Forward size={24} />
+                  </button>
+                  <button onClick={handleDeleteMessages} className="p-3 hover:bg-white/10 rounded-xl transition-colors" title="מחק">
+                    <Trash2 size={24} />
+                  </button>
+                </div>
               </div>
-              <div>
-                <h1 className="text-lg font-black tracking-tight">נועה - ח.סבן</h1>
-                <p className="text-xs text-[#C5A059] font-bold">סוכנת AI פעילה</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-6">
-              <button 
-                onClick={() => setView("admin")} 
-                className="text-[#C5A059] hover:scale-110 transition-transform p-2 hover:bg-white/5 rounded-xl"
-                title="כספת ניהול"
-              >
-                <Shield size={24} />
-              </button>
-              <Video size={20} className="text-white/60 hidden md:block" />
-              <Phone size={18} className="text-white/60 hidden md:block" />
-              <MoreVertical size={20} className="text-white/60" />
-            </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-4">
+                  <div className="relative cursor-pointer" onClick={() => {
+                    let c = parseInt(sessionStorage.getItem("admin_clicks") || "0") + 1;
+                    sessionStorage.setItem("admin_clicks", c.toString());
+                    if (c >= 5) setIsAdminUnlocked(true);
+                  }}>
+                    <img src={NOA_AVATAR} className="w-12 h-12 rounded-full border-2 border-white/20" alt="Noa" />
+                    <div className={`absolute bottom-0 right-0 w-3 h-3 ${isSimulationMode ? "bg-amber-500" : "bg-green-500"} rounded-full border-2 border-[#1E293B]`}></div>
+                  </div>
+                  <div>
+                    <h1 className="text-lg font-black tracking-tight">נועה - ח.סבן {isSimulationMode && "🧪"}</h1>
+                    <p className="text-xs text-[#C5A059] font-bold">{isSimulationMode ? "סימולציה פעילה" : "סוכנת AI פעילה"}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6">
+                  <button 
+                    onClick={() => setView("admin")} 
+                    className="text-[#C5A059] hover:scale-110 transition-transform p-2 hover:bg-white/5 rounded-xl"
+                    title="כספת ניהול"
+                  >
+                    <Shield size={24} />
+                  </button>
+                  <Video size={20} className="text-white/60 hidden md:block" />
+                  <Phone size={18} className="text-white/60 hidden md:block" />
+                  <MoreVertical size={20} className="text-white/60" />
+                </div>
+              </>
+            )}
           </header>
 
           <main className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar bg-[#e5ddd5] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-repeat">
@@ -392,10 +477,30 @@ export default function App() {
                   initial={{ opacity: 0, y: 10 }} 
                   animate={{ opacity: 1, y: 0 }} 
                   layout
-                  className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                  onClick={() => isSelectionMode && toggleMessageSelection(msg.id)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    toggleMessageSelection(msg.id);
+                  }}
+                  className={`flex group relative transition-all duration-300 gap-3 ${isSelectionMode ? "cursor-pointer" : ""} ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"} ${selectedMessages.includes(msg.id) ? "bg-emerald-50/30" : ""}`}
                 >
-                  <div className={`shadow-sm relative mb-2 
-                    ${msg.sender === "noa" ? "bg-white rounded-[24px] rounded-tl-none border-r-4 border-[#C5A059] w-full max-w-full" : "bg-[#DCF8C6] rounded-[24px] rounded-tr-none px-4 py-3 max-w-[85%]"}`}>
+                  {/* WhatsApp Style Avatar */}
+                  <div className="flex-shrink-0 mt-auto mb-2">
+                    <img 
+                      src={msg.sender === "noa" ? NOA_AVATAR : (userProfile?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`)} 
+                      className="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover" 
+                      alt="Avatar"
+                    />
+                  </div>
+
+                  {isSelectionMode && (
+                    <div className={`absolute top-1/2 -translate-y-1/2 p-2 transition-opacity ${msg.sender === "user" ? "right-full mr-12" : "left-full ml-12"}`}>
+                       <CheckCircle2 size={20} className={selectedMessages.includes(msg.id) ? "text-emerald-500 fill-emerald-500" : "text-slate-300"} />
+                    </div>
+                  )}
+
+                  <div className={`shadow-sm relative mb-1 group transition-all
+                    ${msg.sender === "noa" ? "bg-white rounded-[24px] rounded-tl-none border-r-4 border-[#C5A059] w-full max-w-full" : "bg-[#DCF8C6] rounded-[24px] rounded-tr-none px-4 py-3 max-w-[85%]"} ${selectedMessages.includes(msg.id) ? "ring-2 ring-emerald-500 ring-offset-2" : ""}`}>
                     
                     {msg.sender === "noa" ? (
                       <div className="noa-render p-0 overflow-x-hidden text-[18px]">
@@ -406,7 +511,9 @@ export default function App() {
                     )}
                     
                     <div className="flex justify-end gap-1 mt-1 text-[10px] text-slate-400 font-bold px-4 pb-2">
-                      <span>{msg.timestamp?.toDate ? format(msg.timestamp.toDate(), "HH:mm") : ""}</span>
+                       <span title={msg.timestamp?.toDate ? format(msg.timestamp.toDate(), "dd/MM/yyyy HH:mm:ss") : ""}>
+                        {msg.timestamp?.toDate ? format(msg.timestamp.toDate(), "HH:mm") : ""}
+                      </span>
                       {msg.sender === "user" && <CheckCheck size={14} className={msg.status === "seen" ? "text-blue-500" : ""} />}
                     </div>
                   </div>
