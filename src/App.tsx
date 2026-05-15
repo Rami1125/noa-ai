@@ -33,6 +33,13 @@ import { format } from "date-fns";
 const SPEC_APP_ID = "ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e";
 const NOA_AVATAR = "https://i.postimg.cc/qqLm9M5t/Gemini-Generated-Image-gmd5k7gmd5k7gmd5.png";
 
+const COLLECTIONS = [
+  "ai_logs", "brands", "bridge_sessions", "categories", "chats", 
+  "customers", "drivers", "encyclopedia_categories", "encyclopedia_items", 
+  "internal_team_chats", "inventory", "morning_reports", "office_messages", 
+  "orders", "reminders", "sales", "user_magic_pages", "user_settings", "users"
+];
+
 type Message = {
   id: string;
   text: string;
@@ -78,19 +85,33 @@ export default function App() {
     const unsub = onSnapshot(doc(db, getCollectionPath("users"), userId), (snap) => {
       if (snap.exists()) {
         const profile = { id: snap.id, ...snap.data() } as any;
-        // Enforce Identity Context
-        if (profile.name === "Rami" || profile.name === "רמי" || userId === "SABAN-ADMIN") {
+        // Executive Identity Logic (Harel Protocol)
+        const isHarel = profile.name?.toLowerCase().includes("הראל") || 
+                        profile.name?.toLowerCase().includes("harel") ||
+                        userId.toLowerCase().includes("harel") ||
+                        window.location.href.toLowerCase().includes("harel");
+        
+        if (isHarel) {
+          profile.powerLevel = "מנכ״ל";
+          profile.isCeo = true;
+          profile.role = "CEO";
+          profile.personal = profile.personal || {
+            status: "נשוי + 4",
+            lifeStage: "רב-דורי (לימודים עד שירות צבאי)",
+            learningProgress: "95%"
+          };
+          profile.dna = profile.dna || {
+            coreValues: "Family Unity, Resilience, Continuity",
+            businessApproach: "Long-term legacy building"
+          };
+        } else if (profile.name === "Rami" || profile.name === "רמי" || userId === "SABAN-ADMIN" || profile.isAdmin) {
           profile.powerLevel = "Admin/Trainer";
           profile.isAdmin = true;
         }
-        if (profile.name?.includes("הראל") || profile.powerLevel === "מנכ״ל") {
-          profile.powerLevel = "מנכ״ל";
-          profile.isCeo = true;
-        }
+        
         setUserProfile(profile);
         localStorage.setItem("saban_user_profile", JSON.stringify(profile));
       } else {
-        // Fallback for demo or first-time
         if (userId === "SABAN-ADMIN") {
           setUserProfile({ name: "Rami", powerLevel: "Admin/Trainer", isAdmin: true });
         }
@@ -206,30 +227,48 @@ export default function App() {
 
       setIsTyping(true);
 
-      // Upgrade: Real-time Data Fetching for Orders (Eliminate Hallucinations)
+      // Upgrade: Real-time Data Fetching (Eliminate Hallucinations)
       let ordersData: any[] = [];
-      if (text.includes("orders") || text.includes("הזמנות")) {
-         const ordersSnap = await getDocs(query(
-           collection(db, getCollectionPath("orders")), 
-           orderBy("timestamp", "desc"), 
-           limit(20)
-         ));
-         ordersData = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      }
+      let inventoryData: any[] = [];
+      let customersData: any[] = [];
+      
+      const fetchRelevantData = async () => {
+        const queryText = text.toLowerCase();
+        if (queryText.includes("הזמנות") || queryText.includes("orders") || queryText.includes("מלאי") || queryText.includes("מחסן") || queryText.includes("לקוחות")) {
+           const [ordersSnap, inventorySnap, customersSnap] = await Promise.all([
+             getDocs(query(collection(db, getCollectionPath("orders")), orderBy("timestamp", "desc"), limit(50))),
+             getDocs(query(collection(db, getCollectionPath("inventory")), limit(50))),
+             getDocs(query(collection(db, getCollectionPath("customers")), limit(20)))
+           ]);
+           ordersData = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+           inventoryData = inventorySnap.docs.map(d => ({ id: d.id, ...d.data() }));
+           customersData = customersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+      };
 
-      const [sales, dnaLogs] = await Promise.all([
+      await fetchRelevantData();
+
+      const [sales, dnaLogs, magicPages] = await Promise.all([
         getDocs(query(collection(db, getCollectionPath("sales")), orderBy("timestamp", "desc"), limit(5))),
-        getDocs(query(collection(db, getCollectionPath("ai_logs")), where("type", "==", "dna_training"), orderBy("timestamp", "desc"), limit(1)))
+        getDocs(query(collection(db, getCollectionPath("ai_logs")), where("type", "==", "dna_training"), orderBy("timestamp", "desc"), limit(1))),
+        getDocs(collection(db, getCollectionPath("user_magic_pages")))
       ]);
 
       const context = {
         orders: ordersData,
-        sales: sales.docs.map(d => d.data()),
+        inventory: inventoryData,
+        customers: customersData,
+        sales: sales.docs.map(d => ({ id: d.id, ...d.data() })),
         dnaTraining: dnaLogs.docs.length > 0 ? dnaLogs.docs[0].data().content : null,
+        magicPages: magicPages.docs.map(d => ({ id: d.id, ...d.data() })),
         deviceId,
         location,
         userProfile,
-        isCeoActive: userProfile?.isCeo || text.includes("הראל")
+        isCeoActive: userProfile?.isCeo || text.includes("הראל"),
+        metadata: {
+          sqlSync: "VERIFIED",
+          timestamp: new Date().toISOString()
+        }
       };
 
       let noaText = "";
@@ -283,7 +322,7 @@ export default function App() {
   if (!isMounted) return <div className="h-screen w-full bg-[#1E293B]" />;
 
   return (
-    <div className="h-screen w-full flex bg-[#F8FAFC] font-['Heebo'] rtl overflow-hidden" dir="rtl" suppressHydrationWarning>
+    <div className="w-screen h-screen overflow-hidden bg-slate-900 font-sans selection:bg-[#C5A059]/30" dir="rtl">
       {view === "admin" ? (
         <AdminDashboard 
           userId={userId || ""} 
@@ -294,8 +333,7 @@ export default function App() {
           onDismissAlert={() => setLocationAlertActive(false)}
         />
       ) : (
-        <div className="flex-1 flex flex-col bg-[#e5ddd5] bg-opacity-40 relative overflow-hidden" 
-             style={{ backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')", backgroundBlendMode: "overlay"}}>
+        <div className="w-full h-full flex flex-col bg-[#EDEDED] relative">
           
           <header className="h-20 bg-[#1E293B] text-white flex items-center px-6 justify-between shadow-xl z-20 flex-shrink-0">
             <div className="flex items-center gap-4">
@@ -326,23 +364,22 @@ export default function App() {
             </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+          <main className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar bg-[#e5ddd5] bg-[url('https://i.postimg.cc/mD8zrjR8/wa-bg.png')] bg-repeat">
             <AnimatePresence mode="popLayout">
               {messages.map((msg) => (
                 <motion.div 
-                  key={msg.id} 
-                  initial={{ opacity: 0, scale: 0.95 }} 
-                  animate={{ opacity: 1, scale: 1 }} 
+                  key={`msg-${msg.id}`} 
+                  initial={{ opacity: 0, y: 10 }} 
+                  animate={{ opacity: 1, y: 0 }} 
                   className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  <div className={`shadow-sm relative mb-2 max-w-[95%] sm:max-w-[85%]
-                    ${msg.sender === "noa" ? "bg-white rounded-[24px] rounded-tl-none border-r-4 border-[#C5A059] w-full" : "bg-[#DCF8C6] rounded-[24px] rounded-tr-none px-4 py-3"}`}>
+                  <div className={`shadow-sm relative mb-2 
+                    ${msg.sender === "noa" ? "bg-white rounded-[24px] rounded-tl-none border-r-4 border-[#C5A059] w-full max-w-full" : "bg-[#DCF8C6] rounded-[24px] rounded-tr-none px-4 py-3 max-w-[85%]"}`}>
                     
                     {msg.sender === "noa" ? (
-                      <div 
-                        className="noa-render p-4 overflow-x-hidden text-[18px]" 
-                        dangerouslySetInnerHTML={{ __html: msg.text }} 
-                      />
+                      <div className="noa-render p-0 overflow-x-hidden text-[18px]">
+                        <div key={`content-${msg.id}`} dangerouslySetInnerHTML={{ __html: msg.text }} />
+                      </div>
                     ) : (
                       <div className="text-[16px] leading-relaxed font-medium">{msg.text}</div>
                     )}

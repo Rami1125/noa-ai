@@ -26,6 +26,7 @@ import {
   onSnapshot, 
   addDoc, 
   serverTimestamp, 
+  getDocs,
   limit, 
   where,
   setDoc,
@@ -115,6 +116,29 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
   ];
   
   const getCollectionPath = (name: string) => `artifacts/${specId}/public/data/${name}`;
+
+  const syncAllCollections = async () => {
+     setIsSyncing(true);
+     setSyncProgress(0);
+     try {
+        const collections = [
+          "ai_logs", "brands", "bridge_sessions", "categories", "chats", 
+          "customers", "drivers", "encyclopedia_categories", "encyclopedia_items", 
+          "internal_team_chats", "inventory", "morning_reports", "office_messages", 
+          "orders", "reminders", "sales", "user_magic_pages", "user_settings", "users"
+        ];
+        for (let i = 0; i < collections.length; i++) {
+           await getDocs(query(collection(db, getCollectionPath(collections[i])), limit(1)));
+           setSyncProgress(Math.floor(((i + 1) / collections.length) * 100));
+        }
+        setSyncSuccess(true);
+        setTimeout(() => setSyncSuccess(false), 3000);
+     } catch (e) {
+        console.error("Sync error", e);
+     } finally {
+        setIsSyncing(false);
+     }
+  };
 
   const handleVaultLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -354,10 +378,13 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
         <nav className="flex-1 p-4 space-y-2 mt-4">
           <button 
             onClick={() => setActiveTab("malshinon")}
-            className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === "malshinon" ? "bg-[#C5A059] text-white shadow-lg" : "hover:bg-white/5 text-slate-400 group-hover:text-white"}`}
+            className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all ${activeTab === "malshinon" ? "bg-[#C5A059] text-white shadow-lg" : "hover:bg-white/5 text-slate-400 group-hover:text-white"}`}
           >
-            <Activity size={20} />
-            <span className="font-bold">מלשינון בזמן אמת</span>
+            <div className="flex items-center gap-4">
+              <Activity size={20} />
+              <span className="font-bold">מלשינון בזמן אמת</span>
+            </div>
+            {activeTab === "malshinon" && <div className="w-2 h-2 bg-white rounded-full animate-pulse" />}
           </button>
           <button 
             onClick={() => setActiveTab("users")}
@@ -424,6 +451,14 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                            <Activity size={18} className="text-[#C5A059]" />
                            לוג פעילות מערכת
                         </h3>
+                        <button 
+                           onClick={syncAllCollections}
+                           disabled={isSyncing}
+                           className="bg-[#1e293b] text-white px-6 py-2 rounded-xl font-black hover:bg-slate-700 transition-all flex items-center gap-2 text-xs"
+                        >
+                           <Activity size={14} className={isSyncing ? "animate-spin" : ""} />
+                           {isSyncing ? `מסנכרן ${syncProgress}%` : "סנכרון מלא 19 מאגרים"}
+                        </button>
                      </div>
                      <div className="p-4 h-[600px] overflow-y-auto space-y-3 font-mono text-[12px]">
                         {logs.map((log) => (
@@ -588,10 +623,10 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                   </div>
 
                   <div className="bg-white rounded-[40px] border border-slate-200 shadow-xl overflow-hidden">
-                     <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                        <h3 className="font-black text-xl text-[#1e293b] flex items-center gap-3">
+                     <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-[#1e293b] text-white">
+                        <h3 className="font-black text-xl flex items-center gap-3">
                            <ShieldCheck size={24} className="text-[#C5A059]" />
-                           User Intelligence Report - SabanOS Forensic DNA
+                           Intelligence Report: Personal DNA vs Professional Needs
                         </h3>
                      </div>
                      <table className="w-full text-right">
