@@ -97,10 +97,11 @@ export default function App() {
 
   useEffect(() => {
     setIsMounted(true);
-    // WhatsApp original-style sounds
-    audioSent.current = new Audio("https://cdn.pixabay.com/audio/2022/03/10/audio_510b6d2e67.mp3"); // Short crisp pop
-    audioReceived.current = new Audio("https://cdn.pixabay.com/audio/2022/10/30/audio_487c679a78.mp3"); // Notification ping
-    audioAlert.current = new Audio("https://cdn.pixabay.com/audio/2022/03/10/audio_c8de63e18e.mp3"); // Emergency loopable 
+    // WhatsApp-style sounds from more reliable sources
+    audioSent.current = new Audio("https://raw.githubusercontent.com/AnestisG/whatsapp-call-recorder/master/res/raw/whatsapp_outgoing_message.mp3");
+    audioReceived.current = new Audio("https://raw.githubusercontent.com/AnestisG/whatsapp-call-recorder/master/res/raw/whatsapp_incoming_message.mp3");
+    // Alert sound - standardized emergency tone
+    audioAlert.current = new Audio("https://actions.google.com/sounds/v1/alarms/emergency_itds.ogg"); 
     
     let id = localStorage.getItem("deviceId");
     if (!id) {

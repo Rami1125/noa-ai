@@ -599,7 +599,7 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                            </tr>
                         </thead>
                         <tbody>
-                           {employees.map((emp) => (
+                             {employees.map((emp) => (
                               <tr key={emp.id} className="border-t border-slate-100 hover:bg-[#C5A059]/5 transition-colors">
                                  {/* Category A: Communication */}
                                  <td className="p-6">
