@@ -14,7 +14,11 @@ import {
   Trash2,
   Forward,
   X,
-  CheckCircle2
+  CheckCircle2,
+  FlaskConical,
+  ChevronLeft,
+  ChevronRight,
+  Settings
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
@@ -57,6 +61,7 @@ type Message = {
 
 export default function App() {
   const [isMounted, setIsMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -65,6 +70,8 @@ export default function App() {
   const [deviceId, setDeviceId] = useState<string>("");
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [view, setView] = useState<"chat" | "admin">(() => (localStorage.getItem("saban_view") as any) || "chat");
+  const [isAdminMinimized, setIsAdminMinimized] = useState(false);
+
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
   const [locationAlertActive, setLocationAlertActive] = useState(false);
   const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
@@ -176,7 +183,8 @@ export default function App() {
     
     initAuth().then(user => {
       if (user) setUserId(user.uid);
-    });
+      setTimeout(() => setIsLoading(false), 800); // Smooth transition
+    }).catch(() => setIsLoading(false));
   }, []);
 
   const getIntelligencePath = (name: string) => `artifacts/${INTELLIGENCE_APP_ID}/public/data/${name}`;
@@ -401,157 +409,241 @@ export default function App() {
     setSelectedMessages([]);
   };
 
-  if (!isMounted) return <div className="h-screen w-full bg-[#1E293B]" />;
+  if (!isMounted || isLoading) {
+    return (
+      <div className="h-screen w-full bg-slate-900 flex flex-col items-center justify-center space-y-6">
+        <motion.div 
+          animate={{ 
+            scale: [1, 1.1, 1],
+            rotate: [0, 5, -5, 0]
+          }}
+          transition={{ repeat: Infinity, duration: 3 }}
+          className="relative"
+        >
+          <img src={NOA_AVATAR} className="w-24 h-24 rounded-full border-4 border-[#C5A059] shadow-[0_0_40px_rgba(197,160,89,0.3)]" alt="SabanOS" />
+          <div className="absolute -bottom-2 -right-2 bg-[#C5A059] p-2 rounded-xl shadow-lg border-2 border-slate-900">
+             <Shield size={20} className="text-white" />
+          </div>
+        </motion.div>
+        <div className="flex flex-col items-center gap-2">
+           <h2 className="text-[#C5A059] font-black tracking-widest text-xl">SabanOS V30</h2>
+           <div className="flex gap-1.5">
+              {[0, 1, 2].map(i => (
+                <motion.div 
+                  key={i}
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ repeat: Infinity, duration: 1, delay: i * 0.2 }}
+                  className="w-2 h-2 bg-white/40 rounded-full"
+                />
+              ))}
+           </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-slate-900 font-sans selection:bg-[#C5A059]/30" dir="rtl">
-      {view === "admin" ? (
-        <AdminDashboard 
-          userId={userId || ""} 
-          userProfile={userProfile}
-          specId={INTELLIGENCE_APP_ID} 
-          onBack={() => setView("chat")} 
-          locationAlertActive={locationAlertActive}
-          onDismissAlert={() => setLocationAlertActive(false)}
-          isSimulationMode={isSimulationMode}
-          onToggleSimulation={() => setIsSimulationMode(!isSimulationMode)}
-        />
-      ) : (
-        <div className="w-full h-full flex flex-col bg-[#EDEDED] relative">
-          
-          <header className={`h-16 md:h-20 flex items-center px-6 justify-between shadow-xl z-20 flex-shrink-0 transition-all ${isSelectionMode ? "bg-emerald-600 text-white" : "bg-[#1E293B] text-white"}`}>
-            {isSelectionMode ? (
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-4">
-                  <button onClick={() => { setIsSelectionMode(false); setSelectedMessages([]); }} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                    <X size={24} />
-                  </button>
-                  <span className="text-xl font-bold">{selectedMessages.length} נבחרו</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={handleForwardMessages} className="p-3 hover:bg-white/10 rounded-xl transition-colors" title="העבר">
-                    <Forward size={24} />
-                  </button>
-                  <button onClick={handleDeleteMessages} className="p-3 hover:bg-white/10 rounded-xl transition-colors" title="מחק">
-                    <Trash2 size={24} />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-4">
-                  <div className="relative cursor-pointer" onClick={() => {
-                    let c = parseInt(sessionStorage.getItem("admin_clicks") || "0") + 1;
-                    sessionStorage.setItem("admin_clicks", c.toString());
-                    if (c >= 5) setIsAdminUnlocked(true);
-                  }}>
-                    <img src={NOA_AVATAR} className="w-8 h-8 md:w-12 md:h-12 rounded-full border-2 border-white/20" alt="Noa" />
-                    <div className={`absolute bottom-0 right-0 w-3 h-3 ${isSimulationMode ? "bg-amber-500" : "bg-green-500"} rounded-full border-2 border-[#1E293B]`}></div>
-                  </div>
-                  <div>
-                    <h1 className="text-sm md:text-lg font-black tracking-tight">נועה - ח.סבן {isSimulationMode && "🧪"}</h1>
-                    <p className="text-[10px] md:text-xs text-[#C5A059] font-bold">{isSimulationMode ? "סימולציה פעילה" : "סוכנת AI פעילה"}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-6">
-                  <button 
-                    onClick={() => setView("admin")} 
-                    className="text-[#C5A059] hover:scale-110 transition-transform p-2 hover:bg-white/5 rounded-xl"
-                    title="כספת ניהול"
-                  >
-                    <Shield size={24} />
-                  </button>
-                  <Video size={20} className="text-white/60 hidden md:block" />
-                  <Phone size={18} className="text-white/60 hidden md:block" />
-                  <MoreVertical size={20} className="text-white/60" />
-                </div>
-              </>
-            )}
-          </header>
-
-          <main className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar bg-[#e5ddd5] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-repeat">
-            <AnimatePresence>
-              {messages.map((msg) => (
-                <motion.div 
-                  key={msg.id} 
-                  initial={{ opacity: 0, y: 10 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  layout
-                  onClick={() => isSelectionMode && toggleMessageSelection(msg.id)}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    toggleMessageSelection(msg.id);
-                  }}
-                  className={`flex group relative transition-all duration-300 gap-2 md:gap-3 ${isSelectionMode ? "cursor-pointer" : ""} ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"} ${selectedMessages.includes(msg.id) ? "bg-emerald-50/30" : ""}`}
-                >
-                  {/* WhatsApp Style Avatar */}
-                  <div className="flex-shrink-0 mt-auto mb-2">
-                    <img 
-                      src={msg.sender === "noa" ? NOA_AVATAR : (userProfile?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`)} 
-                      className="w-7 h-7 md:w-10 md:h-10 rounded-full border-2 border-white shadow-sm object-cover" 
-                      alt="Avatar"
-                    />
-                  </div>
-
-                  {isSelectionMode && (
-                    <div className={`absolute top-1/2 -translate-y-1/2 p-2 transition-opacity ${msg.sender === "user" ? "right-full mr-12" : "left-full ml-12"}`}>
-                       <CheckCircle2 size={20} className={selectedMessages.includes(msg.id) ? "text-emerald-500 fill-emerald-500" : "text-slate-300"} />
-                    </div>
-                  )}
-
-                  <div className={`shadow-sm relative mb-3 group transition-all
-                    ${msg.sender === "noa" ? "bg-white rounded-[24px] rounded-tl-none border-r-4 border-[#C5A059] w-full max-w-full" : "bg-[#DCF8C6] rounded-[24px] rounded-tr-none px-3 py-2 md:px-4 md:py-3 max-w-[85%]"} ${selectedMessages.includes(msg.id) ? "ring-2 ring-emerald-500 ring-offset-2" : ""}`}>
-                    
-                    {msg.sender === "noa" ? (
-                      <div className="noa-render p-0 overflow-x-hidden text-[14px] md:text-[18px]">
-                        <div dangerouslySetInnerHTML={{ __html: msg.text }} />
-                      </div>
-                    ) : (
-                      <div className="text-[14px] md:text-[16px] leading-relaxed font-medium">{msg.text}</div>
-                    )}
-                    
-                    <div className="flex justify-end gap-1 mt-1 text-[10px] text-slate-400 font-bold px-4 pb-2">
-                       <span title={msg.timestamp?.toDate ? format(msg.timestamp.toDate(), "dd/MM/yyyy HH:mm:ss") : ""}>
-                        {msg.timestamp?.toDate ? format(msg.timestamp.toDate(), "HH:mm") : ""}
-                      </span>
-                      {msg.sender === "user" && <CheckCheck size={14} className={msg.status === "seen" ? "text-blue-500" : ""} />}
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm flex gap-1">
-                  <div className="w-1.5 h-1.5 bg-[#C5A059] rounded-full animate-bounce"></div>
-                  <div className="w-1.5 h-1.5 bg-[#C5A059] rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                  <div className="w-1.5 h-1.5 bg-[#C5A059] rounded-full animate-bounce [animation-delay:0.4s]"></div>
-                </div>
-              </div>
-            )}
-            <div ref={scrollRef} className="h-1 w-full" />
-          </main>
-
-          <footer className="bg-white/90 backdrop-blur-[10px] p-4 flex items-center gap-3 border-t border-slate-200 flex-shrink-0">
-            <Smile className="text-slate-400 cursor-pointer hover:text-[#C5A059] transition-colors" />
-            <Paperclip className="text-slate-400 rotate-45 cursor-pointer hover:text-[#C5A059] transition-colors" />
-            <input 
-              value={inputText}
-              onChange={e => setInputText(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleSendMessage()}
-              placeholder="הקלד הודעה..."
-              className="flex-1 bg-[#f1f5f9] rounded-2xl px-4 py-2 md:px-5 md:py-3 outline-none font-bold text-slate-700 text-sm md:text-base"
-            />
-            <button 
-              onClick={handleSendMessage} 
-              disabled={!inputText.trim() || isTyping}
-              className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-lg transition-all ${!inputText.trim() || isTyping ? "bg-slate-300" : "bg-[#1E293B] hover:bg-[#334155] active:scale-95"}`}
-            >
-              <Send size={20} className="rotate-180" />
-            </button>
-          </footer>
+      {/* Simulation Mode HUD Alert - Compact V28 */}
+      {isSimulationMode && (
+        <div className="fixed top-2 left-1/2 -translate-x-1/2 z-[120] w-full max-w-xs px-2 pointer-events-none">
+          <div className="bg-amber-500/90 backdrop-blur-md text-white py-1 w-full rounded-full shadow-lg flex items-center justify-between border border-amber-400/50 pointer-events-auto">
+             <div className="flex items-center gap-2 px-3">
+                <FlaskConical size={12} className="animate-pulse" />
+                <span className="text-[9px] font-black uppercase tracking-wider">Simulation Active</span>
+             </div>
+             <button onClick={() => setIsSimulationMode(false)} className="bg-black/10 hover:bg-black/20 p-1 rounded-full ml-1">
+                <X size={10} />
+             </button>
+          </div>
         </div>
       )}
+
+      <div className="w-full h-full flex flex-col bg-[#EDEDED] relative">
+        
+        <header className={`h-14 md:h-20 flex items-center px-6 justify-between shadow-xl z-20 flex-shrink-0 transition-all ${isSelectionMode ? "bg-emerald-600 text-white" : "bg-[#1E293B] text-white"}`}>
+          {isSelectionMode ? (
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-4">
+                <button onClick={() => { setIsSelectionMode(false); setSelectedMessages([]); }} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                  <X size={24} />
+                </button>
+                <span className="text-xl font-bold">{selectedMessages.length} נבחרו</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={handleForwardMessages} className="p-3 hover:bg-white/10 rounded-xl transition-colors" title="העבר">
+                  <Forward size={24} />
+                </button>
+                <button onClick={handleDeleteMessages} className="p-3 hover:bg-white/10 rounded-xl transition-colors" title="מחק">
+                  <Trash2 size={24} />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-4">
+                <div className="relative cursor-pointer" onClick={() => {
+                  let c = parseInt(sessionStorage.getItem("admin_clicks") || "0") + 1;
+                  sessionStorage.setItem("admin_clicks", c.toString());
+                  if (c >= 5) setIsAdminUnlocked(true);
+                }}>
+                  <img src={NOA_AVATAR} className="w-10 h-10 md:w-14 md:h-14 rounded-full border-2 border-white/20 shadow-lg object-cover" alt="Noa" />
+                  <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 ${isSimulationMode ? "bg-amber-500" : "bg-green-500"} rounded-full border-2 border-[#1E293B] shadow-sm`}></div>
+                </div>
+                <div className="flex flex-col">
+                  <h1 className="text-[15px] md:text-xl font-black tracking-tight leading-none mb-1">נועה - SabanOS {isSimulationMode && "🧪"}</h1>
+                  <p className="text-[10px] md:text-xs text-[#C5A059] font-black uppercase tracking-tight opacity-90">{isSimulationMode ? "Simulation Passive" : "AI Intelligence Active"}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 md:gap-6">
+                <button 
+                  onClick={() => setView("admin")} 
+                  className="text-[#C5A059] hover:scale-110 transition-all p-2.5 bg-white/5 hover:bg-white/10 rounded-2xl shadow-xl z-[150]"
+                  title="כספת ניהול"
+                >
+                  <Shield size={22} className="md:w-6 md:h-6" />
+                </button>
+                <div className="hidden md:flex items-center gap-5">
+                   <Video size={18} className="text-white/60 hover:text-white transition-colors cursor-pointer" />
+                   <Phone size={16} className="text-white/60 hover:text-white transition-colors cursor-pointer" />
+                </div>
+                <MoreVertical size={18} className="text-white/40 cursor-pointer" />
+              </div>
+            </>
+          )}
+        </header>
+
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar bg-[#e5ddd5] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-repeat">
+          <AnimatePresence>
+            {messages.map((msg) => (
+              <motion.div 
+                key={msg.id} 
+                initial={{ opacity: 0, y: 10 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                layout
+                onClick={() => isSelectionMode && toggleMessageSelection(msg.id)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  toggleMessageSelection(msg.id);
+                }}
+                className={`flex group relative transition-all duration-300 gap-2 md:gap-3 ${isSelectionMode ? "cursor-pointer" : ""} ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"} ${selectedMessages.includes(msg.id) ? "bg-emerald-50/30" : ""}`}
+              >
+                {/* WhatsApp Style Avatar - Optimized 32x32 (w-8 h-8) */}
+                <div className="flex-shrink-0 mt-auto mb-2">
+                  <img 
+                    src={msg.sender === "noa" ? NOA_AVATAR : (userProfile?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`)} 
+                    className="w-8 h-8 rounded-full border-2 border-white shadow-md object-cover" 
+                    alt="Avatar"
+                  />
+                </div>
+
+                {isSelectionMode && (
+                  <div className={`absolute top-1/2 -translate-y-1/2 p-2 transition-opacity ${msg.sender === "user" ? "right-full mr-12" : "left-full ml-12"}`}>
+                     <CheckCircle2 size={18} className={selectedMessages.includes(msg.id) ? "text-emerald-500 fill-emerald-500" : "text-slate-300"} />
+                  </div>
+                )}
+
+                <div className={`shadow-sm relative mb-3 group transition-all
+                  ${msg.sender === "noa" ? "bg-white rounded-[24px] rounded-tl-none border-r-4 border-[#C5A059] w-full max-w-full" : "bg-[#DCF8C6] rounded-[24px] rounded-tr-none px-3 py-2 md:px-4 md:py-3 max-w-[85%]"} ${selectedMessages.includes(msg.id) ? "ring-2 ring-emerald-500 ring-offset-2" : ""}`}>
+                  
+                  {msg.sender === "noa" ? (
+                    <div className="noa-render p-0 overflow-x-hidden text-[14px] md:text-[18px]">
+                      <div dangerouslySetInnerHTML={{ __html: msg.text }} />
+                    </div>
+                  ) : (
+                    <div className="text-[14px] md:text-[16px] leading-relaxed font-medium">{msg.text}</div>
+                  )}
+                  
+                  <div className="flex justify-end gap-1 mt-1 text-[10px] text-slate-400 font-bold px-4 pb-2">
+                     <span title={msg.timestamp?.toDate ? format(msg.timestamp.toDate(), "dd/MM/yyyy HH:mm:ss") : ""}>
+                      {msg.timestamp?.toDate ? format(msg.timestamp.toDate(), "HH:mm") : ""}
+                    </span>
+                    {msg.sender === "user" && <CheckCheck size={14} className={msg.status === "seen" ? "text-blue-500" : ""} />}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm flex gap-1">
+                <div className="w-1.5 h-1.5 bg-[#C5A059] rounded-full animate-bounce"></div>
+                <div className="w-1.5 h-1.5 bg-[#C5A059] rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                <div className="w-1.5 h-1.5 bg-[#C5A059] rounded-full animate-bounce [animation-delay:0.4s]"></div>
+              </div>
+            </div>
+          )}
+          <div ref={scrollRef} className="h-4 w-full" />
+        </main>
+
+        <footer className="bg-white/90 backdrop-blur-[10px] p-4 flex items-center gap-3 border-t border-slate-200 flex-shrink-0">
+          <Smile className="text-slate-400 cursor-pointer hover:text-[#C5A059] transition-colors" />
+          <Paperclip className="text-slate-400 rotate-45 cursor-pointer hover:text-[#C5A059] transition-colors" />
+          <input 
+            value={inputText}
+            onChange={e => setInputText(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleSendMessage()}
+            placeholder="הקלד הודעה..."
+            className="flex-1 bg-[#f1f5f9] rounded-2xl px-4 py-2 md:px-5 md:py-3 outline-none font-bold text-slate-700 text-sm md:text-base"
+          />
+          <button 
+            onClick={handleSendMessage} 
+            disabled={!inputText.trim() || isTyping}
+            className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-lg transition-all ${!inputText.trim() || isTyping ? "bg-slate-300" : "bg-[#1E293B] hover:bg-[#334155] active:scale-95"}`}
+          >
+            <Send size={20} className="rotate-180" />
+          </button>
+        </footer>
+      </div>
+
+      {/* Admin Drawer Overlay */}
+      <AnimatePresence>
+        {view === "admin" && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setView("chat")}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80]"
+            />
+            <motion.div 
+              initial={{ x: "-100%" }}
+              animate={{ x: isAdminMinimized ? "-95%" : 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 left-0 w-[95%] md:w-[85%] lg:w-[1200px] max-w-[100vw] bg-white z-[90] shadow-2xl flex flex-col overflow-hidden"
+            >
+               {/* Drawer Controls */}
+               <div className="absolute top-4 left-4 z-[100] flex gap-3">
+                  <button 
+                    onClick={() => setIsAdminMinimized(!isAdminMinimized)}
+                    className="w-10 h-10 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full flex items-center justify-center shadow-md transition-all sm:hidden"
+                  >
+                    {isAdminMinimized ? <ChevronLeft size={20} /> : <div className="w-4 h-1 bg-slate-400 rounded-full" />}
+                  </button>
+                  <button 
+                    onClick={() => setView("chat")}
+                    className="w-12 h-12 bg-red-500 hover:bg-red-600 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-red-500/30 transition-all active:scale-90"
+                  >
+                    <X size={24} />
+                  </button>
+               </div>
+
+               <AdminDashboard 
+                 userId={userId || ""} 
+                 userProfile={userProfile}
+                 specId={INTELLIGENCE_APP_ID} 
+                 onBack={() => setView("chat")} 
+                 locationAlertActive={locationAlertActive}
+                 onDismissAlert={() => setLocationAlertActive(false)}
+                 isSimulationMode={isSimulationMode}
+                 onToggleSimulation={() => setIsSimulationMode(!isSimulationMode)}
+               />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }

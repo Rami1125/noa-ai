@@ -17,7 +17,8 @@ import {
   ShieldCheck,
   Pencil,
   Mail,
-  Search
+  Search,
+  X
 } from "lucide-react";
 import { 
   collection, 
@@ -361,425 +362,259 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
   }
 
   return (
-    <div className="flex-1 bg-[#f8fafc] text-[#1e293b] flex flex-col md:flex-row h-screen font-['Heebo'] rtl" dir="rtl">
-      {/* Sidebar */}
-      <aside className="w-full md:w-80 bg-[#1e293b] text-white flex flex-col shadow-2xl z-30">
-        <div className="p-4 md:p-8 border-b border-white/10">
-          <div className="flex items-center gap-4 mb-3 md:mb-6">
-             <div className="w-10 h-10 md:w-14 md:h-14 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20">
-                {isCeo ? <ShieldCheck size={32} className="text-emerald-400" /> : <LayoutDashboard size={32} className="text-[#C5A059]" />}
+    <div className="flex-1 bg-[#f1f5f9] text-[#1e293b] flex flex-col h-screen font-['Heebo'] rtl overflow-hidden" dir="rtl">
+      {/* Unified Header */}
+      <header className="bg-[#1e293b] text-white p-6 shadow-2xl z-30 flex-shrink-0">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+             <div className="w-12 h-12 bg-[#C5A059] rounded-2xl flex items-center justify-center shadow-lg shadow-[#C5A059]/20">
+                <ShieldCheck size={28} className="text-white" />
              </div>
              <div>
-                <h2 className="font-black text-xl leading-tight">{isCeo ? "HQ GLOBAL" : "ניהול SABAN"}</h2>
-                <div className="flex items-center gap-1 text-[10px] text-[#C5A059] font-bold uppercase tracking-widest">
-                   <span>{isCeo ? "המנכ״ל הראל אידלסטון" : "מנהל מערכת מאושר"}</span>
-                </div>
+                <h2 className="font-black text-xl tracking-tight leading-none mb-1">SabanOS Unified Admin</h2>
+                <p className="text-[10px] text-[#C5A059] font-black uppercase tracking-widest">{isCeo ? "Oversight Mode: CEO" : "Oversight Mode: Admin"}</p>
              </div>
           </div>
+          <button onClick={onBack} className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all">
+             <LogOut size={20} />
+          </button>
         </div>
+      </header>
 
-        <nav className="flex-1 p-4 space-y-2 mt-4">
-          <button 
-            onClick={() => setActiveTab("malshinon")}
-            className={`w-full flex items-center justify-between py-3 px-4 rounded-2xl transition-all ${activeTab === "malshinon" ? "bg-[#C5A059] text-white shadow-lg" : "hover:bg-white/5 text-slate-400 group-hover:text-white"}`}
-          >
-            <div className="flex items-center gap-4">
-              <Activity size={20} />
-              <span className="font-bold">מלשינון בזמן אמת</span>
-            </div>
-            {activeTab === "malshinon" && <div className="w-2 h-2 bg-white rounded-full animate-pulse" />}
-          </button>
-          <button 
-            onClick={() => setActiveTab("users")}
-            className={`w-full flex items-center gap-4 py-3 px-4 rounded-2xl transition-all ${activeTab === "users" ? "bg-[#C5A059] text-white shadow-lg" : "hover:bg-white/5 text-slate-400"}`}
-          >
-            <Users size={20} />
-            <span className="font-bold">ניהול מורשי גישה</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab("training")}
-            className={`w-full flex items-center gap-4 py-3 px-4 rounded-2xl transition-all ${activeTab === "training" ? "bg-[#C5A059] text-white shadow-lg" : "hover:bg-white/5 text-slate-400"}`}
-          >
-            <FlaskConical size={20} />
-            <span className="font-bold">מעבדת DNA סוכן</span>
-          </button>
-
-          <div className="pt-2 mt-2 border-t border-white/10">
-             <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10">
-                <div className="flex flex-col">
-                   <span className="text-[10px] md:text-xs font-bold text-[#C5A059] uppercase tracking-widest">Simulation Mode</span>
-                   <span className="text-[9px] text-white/50">Sandboxed Environment</span>
-                </div>
-                <button 
-                  onClick={onToggleSimulation}
-                  className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${isSimulationMode ? "bg-amber-500" : "bg-slate-700"}`}
-                >
-                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-300 ${isSimulationMode ? "right-7" : "right-1"}`} />
-                </button>
-             </div>
-          </div>
-        </nav>
-
-        <div className="p-6 border-t border-white/10">
-           <button onClick={onBack} className="w-full flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-red-500/20 text-white transition-all font-bold">
-              <LogOut size={18} />
-              <span>יציאה מהדשבורד</span>
-           </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-10 bg-[#f8fafc] relative">
-         <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-            <div className="space-y-1">
-               <h1 className="text-4xl font-black text-[#1e293b] tracking-tight">
-                  {activeTab === "malshinon" && "מלשינון בזמן אמת"}
-                  {activeTab === "users" && "ניהול מורשי גישה"}
-                  {activeTab === "training" && "מעבדת אימון נועה"}
-               </h1>
-               <p className="text-slate-500 font-medium">
-                  {activeTab === "malshinon" && "ניטור שיחות, לוגים ומיקומי שטח של משתמשים פעילים."}
-                  {activeTab === "users" && "ניהול משתמשים, רמות סמכות ומחיקת מורשי גישה מהמערכת."}
-                  {activeTab === "training" && "סינכרון היסטוריית WhatsApp ושיפור ה-DNA הוורבלי של הסוכנת."}
-               </p>
+      {/* Unified Main Scrollable Content */}
+      <main className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-8 pb-32">
+          
+          {/* Section 1: DNA Hub & Simulation */}
+          <section className="space-y-6">
+            <div className="flex items-center gap-3 mb-2 px-2">
+               <FlaskConical className="text-[#C5A059]" size={20} />
+               <h3 className="text-lg font-black uppercase tracking-tight">DNA Hub & Simulation</h3>
             </div>
             
-            {locationAlertActive && (
-              <motion.button 
-                initial={{ scale: 0.95 }}
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ repeat: Infinity, duration: 2 }}
-                onClick={onDismissAlert}
-                className="bg-red-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-2xl font-black flex items-center gap-3 shadow-xl shadow-red-600/30 text-sm md:text-base"
-              >
-                <ShieldAlert size={22} />
-                ביטול התראת מיקום
-              </motion.button>
-            )}
-         </header>
-
-         {/* Content View */}
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-            {activeTab === "malshinon" && (
-               <div className="flex flex-col gap-6">
-                  {/* Activity Log Card */}
-                  <div className="bg-white rounded-[24px] border border-slate-200 shadow-lg overflow-hidden flex flex-col">
-                     <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-slate-50/50">
-                        <h3 className="font-black text-[#1e293b] flex items-center gap-3">
-                           <Activity size={18} className="text-[#C5A059]" />
-                           לוג פעילות מערכת
-                        </h3>
-                        <button 
-                           onClick={syncAllCollections}
-                           disabled={isSyncing}
-                           className="w-full sm:w-auto bg-[#1e293b] text-white px-5 py-3 rounded-xl font-black hover:bg-slate-700 transition-all flex items-center justify-center gap-2 text-xs h-12"
-                        >
-                           <Activity size={14} className={isSyncing ? "animate-spin" : ""} />
-                           {isSyncing ? `סנכרון ${syncProgress}%` : "סנכרון מלא 19 מאגרים"}
-                        </button>
-                     </div>
-                     <div className="p-2 h-[400px] overflow-y-auto space-y-2 custom-scrollbar font-mono text-[11px]">
-                        {logs.map((log) => (
-                           <div key={log.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-[#C5A059]/40 transition-all">
-                              <div className="flex justify-between mb-1">
-                                 <span className="text-[#1e293b] font-black text-[10px]">[{log.event?.toUpperCase()}]</span>
-                                 <span className="text-slate-400 text-[9px]">{log.timestamp ? format(log.timestamp.toDate(), "HH:mm:ss") : "--"}</span>
-                              </div>
-                              <div className="space-y-1 text-slate-600">
-                                 <p className="flex items-center gap-2 text-[10px] md:text-xs">
-                                    <Smartphone size={10} />
-                                    <span className="opacity-60">מזהה:</span> <span className="font-bold truncate max-w-[150px]">{log.deviceId}</span>
-                                 </p>
-                                 {log.location && (
-                                    <p className="flex items-center gap-2 text-red-500/80 text-[10px] md:text-xs">
-                                       <MapPin size={10} />
-                                       <span className="opacity-60">נ"צ:</span> <span className="text-[9px] md:text-[11px]">{log.location.lat.toFixed(4)}, {log.location.lng.toFixed(4)}</span>
-                                    </p>
-                                 )}
-                              </div>
-                           </div>
-                        ))}
-                     </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               {/* Training / Upload */}
+               <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-200 space-y-4">
+                  <div className="flex items-center justify-between">
+                     <span className="text-[11px] font-black uppercase text-slate-400">WhatsApp DNA Sync</span>
+                     {syncSuccess ? <ShieldCheck size={16} className="text-emerald-500" /> : <Upload size={16} className="text-[#C5A059]" />}
                   </div>
-
-                  {/* Live Chat Sessions Card */}
-                  <div className="bg-white rounded-[24px] border border-slate-200 shadow-lg overflow-hidden flex flex-col">
-                     <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-                        <h3 className="font-black text-[#1e293b] flex items-center gap-3">
-                           <History size={18} className="text-[#C5A059]" />
-                           יירוט שיחות בזמן אמת
-                        </h3>
-                     </div>
-                     <div className="p-4 h-[400px] overflow-y-auto space-y-4 bg-slate-50/30 custom-scrollbar">
-                        {liveChats.map((chat) => (
-                           <div key={chat.id} className={`p-3 rounded-2xl text-[13px] shadow-sm border ${chat.sender === 'user' ? 'bg-white mr-6 rounded-tr-none border-slate-100' : 'bg-[#e2e8f0] ml-6 rounded-tl-none border-slate-200'}`}>
-                              <div className="flex justify-between items-center mb-1 text-[9px] font-black opacity-40">
-                                 <span>{chat.sender === 'user' ? 'CLIENT_LINK' : 'NOA_AI'}</span>
-                                 <span>{chat.timestamp ? format(chat.timestamp.toDate(), "HH:mm:ss") : ""}</span>
-                              </div>
-                              <p className="font-bold leading-tight">{chat.text}</p>
-                           </div>
-                        ))}
-                     </div>
+                  <div 
+                    onClick={() => fileRef.current?.click()}
+                    className={`h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all ${isSyncing ? "border-[#C5A059] bg-orange-50" : "border-slate-200 hover:border-[#C5A059] bg-slate-50"}`}
+                  >
+                     <input type="file" ref={fileRef} onChange={handleDnaUpload} accept=".txt" className="hidden" />
+                     {isSyncing ? (
+                        <div className="flex flex-col items-center gap-2">
+                           <Activity size={24} className="text-[#C5A059] animate-spin" />
+                           <span className="text-xs font-bold text-[#C5A059]">Analyzing... {syncProgress}%</span>
+                        </div>
+                     ) : (
+                        <div className="flex flex-col items-center gap-2">
+                           <History size={24} className="text-slate-400" />
+                           <span className="text-xs font-bold text-slate-500">Upload WhatsApp Chat (.txt)</span>
+                        </div>
+                     )}
                   </div>
                </div>
-            )}
 
-            {activeTab === "users" && (
-               <div className="flex flex-col gap-6 w-full">
-                  <div className="bg-white p-6 rounded-[24px] border border-slate-200 shadow-lg">
-                     <h3 className="text-lg font-black mb-6 flex items-center gap-3 text-[#1e293b]">
-                        {editingEmployee ? <Pencil size={20} className="text-[#C5A059]" /> : <Plus size={20} className="text-[#C5A059]" />}
-                        {editingEmployee ? `עריכת מורשה: ${editingEmployee.name}` : "הוספת מורשה גישה"}
-                     </h3>
-                     <div className="flex flex-col gap-5">
-                        <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                           <div className="relative group cursor-pointer" onClick={() => fileRef.current?.click()}>
-                              <img 
-                                 src={newEmployee.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${newEmployee.phone || 'default'}`} 
-                                 className="w-20 h-20 rounded-full border-4 border-white shadow-md bg-white object-cover" 
-                                 alt="Avatar" 
-                              />
-                              <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                                 <Upload size={20} />
-                              </div>
-                           </div>
-                           <p className="text-[10px] font-black text-slate-400 uppercase mt-2">שינוי תמונה</p>
-                        </div>
-                        
-                        <div className="space-y-1">
-                           <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase">שם מלא</label>
-                           <input 
-                              value={newEmployee.name}
-                              onChange={e => setNewEmployee({...newEmployee, name: e.target.value})}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 md:p-4 text-[#1e293b] font-bold h-11 md:h-12 text-sm md:text-base"
-                              placeholder="ישראל ישראלי"
-                           />
-                        </div>
-                        
-                        <div className="space-y-1">
-                           <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase">אימייל</label>
-                           <input 
-                              value={newEmployee.email}
-                              onChange={e => setNewEmployee({...newEmployee, email: e.target.value})}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 md:p-4 text-left text-[#1e293b] font-bold h-11 md:h-12 text-sm md:text-base"
-                              placeholder="user@saban.co.il"
-                           />
-                        </div>
-
-                        <div className="space-y-1">
-                           <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase">טלפון (מזהה)</label>
-                           <input 
-                              value={newEmployee.phone}
-                              disabled={!!editingEmployee}
-                              onChange={e => setNewEmployee({...newEmployee, phone: e.target.value})}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 md:p-4 text-[#1e293b] font-mono h-11 md:h-12 text-sm md:text-base"
-                              placeholder="05XXXXXXXX"
-                           />
-                        </div>
-
-                        <div className="space-y-1">
-                           <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase">תפקיד</label>
-                           <select 
-                              value={newEmployee.power}
-                              onChange={e => setNewEmployee({...newEmployee, power: e.target.value})}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 h-11 md:h-12 text-[#1e293b] font-bold text-sm md:text-base"
-                           >
-                              {roles.map((role, idx) => (
-                                <option key={role} value={role}>{role}</option>
-                              ))}
-                           </select>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                           <button 
-                              onClick={handleCreateEmployee}
-                              className="flex-1 bg-[#1e293b] text-white py-3 md:py-4 rounded-xl font-black h-12 md:h-14 flex items-center justify-center gap-2"
-                           >
-                              <Save size={18} />
-                              <span>{editingEmployee ? "עדכן" : "שמור"}</span>
-                           </button>
-                           {editingEmployee && (
-                              <button 
-                                 onClick={() => { setEditingEmployee(null); setNewEmployee({ name: "", phone: "", email: "", power: "דלפק", avatar: "" }); }}
-                                 className="flex-1 bg-slate-100 text-slate-500 py-3 md:py-4 rounded-xl font-black h-12 md:h-14"
-                              >
-                                 ביטול
-                              </button>
-                           )}
-                        </div>
+               {/* Simulation & DNA Control */}
+               <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-200 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-4">
+                     <div>
+                        <h4 className="font-black text-[#1e293b]">Simulation Mode</h4>
+                        <p className="text-[10px] text-slate-500 font-medium tracking-tight">Real-time sandboxed environment</p>
                      </div>
+                     <button 
+                        onClick={onToggleSimulation}
+                        className={`w-14 h-7 rounded-full relative transition-all duration-500 ${isSimulationMode ? "bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]" : "bg-slate-200"}`}
+                     >
+                        <motion.div 
+                          animate={{ x: isSimulationMode ? -28 : 0 }}
+                          className="absolute right-1 top-1 w-5 h-5 bg-white rounded-full shadow-md"
+                        />
+                     </button>
                   </div>
-
-                  <div className="bg-white rounded-[24px] border border-slate-200 shadow-lg overflow-hidden">
-                     <div className="p-5 border-b border-slate-100 bg-[#1e293b] text-white">
-                        <h3 className="font-black text-lg flex items-center gap-3">
-                           <ShieldCheck size={20} className="text-[#C5A059]" />
-                           מורשי גישה
-                        </h3>
+                  
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
+                     <div className="flex items-center gap-3">
+                        <Activity size={18} className="text-emerald-500" />
+                        <span className="text-xs font-black">AI Accuracy</span>
                      </div>
-                     <div className="divide-y divide-slate-100">
-                        {employees.map((emp) => (
-                           <div key={emp.id} className="p-4 flex flex-col gap-4 bg-white sm:hover:bg-slate-50 transition-colors">
-                              <div className="flex items-center gap-4">
-                                 <img src={emp.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${emp.id}`} className="w-12 h-12 rounded-xl object-cover border-2 border-slate-100" alt="" />
-                                 <div className="flex-1 min-w-0">
-                                    <h4 className="font-black text-[#1e293b] truncate leading-tight">{emp.name}</h4>
-                                    <p className="text-[10px] text-[#C5A059] font-black uppercase">{emp.powerLevel || "AGENT"}</p>
-                                 </div>
-                                 <div className={`w-2.5 h-2.5 rounded-full ${emp.status === 'online' ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                              </div>
-                              
-                              <div className="flex items-center justify-between border-t border-slate-50 pt-3">
-                                 <div className="flex gap-2">
-                                    <button onClick={() => startSandbox(emp)} className="p-3 bg-[#C5A059]/10 text-[#C5A059] rounded-xl hover:bg-[#C5A059] hover:text-white transition-all"><FlaskConical size={18} /></button>
-                                    <button onClick={() => startEdit(emp)} className="p-3 bg-slate-100 text-slate-500 rounded-xl"><Pencil size={18} /></button>
-                                 </div>
-                                 <button onClick={() => handleDeleteEmployee(emp.id)} className="p-3 bg-red-50 text-red-300 rounded-xl"><Trash2 size={18} /></button>
-                              </div>
-                           </div>
-                        ))}
-                     </div>
+                     <span className="text-sm font-black text-emerald-600">{latestMetrics.technicalAccuracy}%</span>
                   </div>
                </div>
-            )}
+            </div>
 
-            {activeTab === "training" && (
-               <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                  {/* DNA Training Section */}
-                  <div className="space-y-8">
-                     <div className="bg-white p-10 rounded-[50px] border border-slate-200 shadow-xl flex flex-col items-center justify-center text-center space-y-6">
-                        <div className="w-24 h-24 bg-slate-50 rounded-[40px] flex items-center justify-center border border-slate-100 text-[#C5A059]">
-                           <Upload size={48} className={isSyncing ? "animate-bounce" : ""} />
-                        </div>
-                        <div>
-                           <h3 className="text-2xl font-black text-[#1e293b]">סנכרון היסטוריית WhatsApp</h3>
-                           <p className="text-slate-500 py-2">העלאת קובץ .txt לניתוח טון וסגנון דיבור.</p>
-                        </div>
-                        {isSyncing ? (
-                           <div className="w-full max-w-sm space-y-2">
-                              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                 <motion.div animate={{ width: `${syncProgress}%` }} className="h-full bg-[#C5A059]" />
-                              </div>
-                              <p className="text-[#C5A059] font-black text-[10px]">מנתח סנטימנט: {syncProgress}%</p>
+            {/* Behavioral Rules DNA */}
+            <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-200">
+               <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-black text-[#1e293b] flex items-center gap-2">
+                     <ShieldAlert size={16} className="text-red-500" />
+                     Global Behavioral Override
+                  </h4>
+               </div>
+               <textarea 
+                  value={userRules}
+                  onChange={e => setUserRules(e.target.value)}
+                  placeholder="Insert Noa's core behavioral constraints here..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-medium h-24 outline-none focus:border-[#C5A059] transition-all"
+               />
+               <button 
+                  onClick={handleApplyRules}
+                  className="mt-3 w-full bg-[#1e293b] text-white py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all"
+               >
+                  Deploy Constraints
+               </button>
+            </div>
+          </section>
+
+          {/* Section 2: User Intel (Mobile-Compact) */}
+          <section className="space-y-6">
+            <div className="flex items-center gap-3 mb-2 px-2">
+               <Users className="text-[#C5A059]" size={20} />
+               <h3 className="text-lg font-black uppercase tracking-tight">User Intelligence</h3>
+            </div>
+            
+            <div className="bg-white rounded-[32px] shadow-sm border border-slate-200 overflow-hidden">
+               <div className="divide-y divide-slate-100">
+                  {employees.map((emp) => (
+                     <div key={emp.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-all">
+                        <div className="flex items-center gap-3">
+                           <div className="relative">
+                              <img src={emp.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${emp.id}`} className="w-10 h-10 rounded-full border-2 border-slate-200 object-cover" alt="" />
+                              <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${emp.status === 'online' ? 'bg-green-500' : 'bg-slate-300'}`} />
                            </div>
-                        ) : syncSuccess ? (
-                           <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl font-black flex items-center gap-3">
-                              <ShieldCheck size={24} />
-                              סנכרון DNA הושלם בהצלחה!
-                           </div>
-                        ) : (
-                           <div className="flex flex-col items-center gap-4">
-                              <input 
-                                 type="file" 
-                                 ref={fileRef} 
-                                 onChange={handleDnaUpload} 
-                                 accept=".txt" 
-                                 className="hidden" 
-                              />
-                              <button 
-                                 onClick={() => fileRef.current?.click()} 
-                                 className="bg-slate-100 hover:bg-slate-200 text-[#1e293b] px-10 py-5 rounded-2xl font-black transition-all flex items-center gap-3"
-                              >
-                                 <Upload size={20} />
-                                 העלאת קובץ (txt.)
-                              </button>
-                           </div>
-                        )}
-                     </div>
-
-                     <div className="bg-white p-10 rounded-[50px] border border-slate-200 shadow-xl">
-                        <h3 className="text-xl font-black text-[#1e293b] mb-6">הגדרות טון וסגנון (DNA)</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                           {[
-                              { key: "tone", val: "Formal/Professional", label: "פורמלי / מקצועי" },
-                              { key: "tone", val: "Brotherly/Warm", label: "חברי / 'אחי'" },
-                              { key: "tone", val: "Direct/Technical", label: "ישיר / טכני" },
-                              { key: "tone", val: "Urgent/Field-Style", label: "דחוף / שטח" }
-                           ].map((t, i) => (
-                              <button 
-                                 key={i} 
-                                 onClick={() => handleSaveDNA(t.key, t.val)}
-                                 className="p-5 bg-slate-50 border border-slate-100 rounded-2xl text-[#1e293b] font-bold hover:border-[#C5A059] transition-all"
-                              >
-                                 {t.label}
-                              </button>
-                           ))}
-                        </div>
-                     </div>
-                  </div>
-
-                  {/* Performance Analytics Section */}
-                  <div className="bg-white p-10 rounded-[50px] border border-slate-200 shadow-xl space-y-8">
-                     <div className="flex items-center justify-between">
-                        <h3 className="text-2xl font-black text-[#1e293b]">{isCeo ? "HQ Global Performance" : "Agent Performance Meter"}</h3>
-                        <div className="px-4 py-2 bg-[#C5A059]/10 rounded-xl text-[#C5A059] font-black text-xs uppercase tracking-widest">
-                           {isCeo ? "MASTER OVERSIGHT" : "Live AI Status"}
-                        </div>
-                     </div>
-
-                     <div className="space-y-10">
-                        {(isCeo ? [
-                           { label: "Global Oversight %", val: latestMetrics.globalOversight, color: "#10b981", glow: "0 0 20px rgba(16, 185, 129, 0.4)" },
-                           { label: "HQ Efficiency %", val: latestMetrics.hqEfficiency, color: "#1e293b", glow: "0 0 20px rgba(30, 41, 59, 0.4)" },
-                           { label: "Network Stability %", val: 99, color: "#3b82f6", glow: "0 0 20px rgba(59, 130, 246, 0.4)" }
-                        ] : [
-                           { label: "Sales Push %", val: latestMetrics.salesPush, color: "#C5A059", glow: "0 0 20px rgba(197, 160, 89, 0.4)" },
-                           { label: "Technical Accuracy %", val: latestMetrics.technicalAccuracy, color: "#1e293b", glow: "0 0 20px rgba(30, 41, 59, 0.4)" },
-                           { label: "Personality Sync %", val: latestMetrics.personalitySync, color: "#10b981", glow: "0 0 20px rgba(16, 185, 129, 0.4)" }
-                        ]).map((metric, i) => (
-                           <div key={metric.label} className="space-y-3">
-                              <div className="flex justify-between items-end">
-                                 <span className="font-black text-slate-500 uppercase text-xs">{metric.label}</span>
-                                 <span className="font-black text-2xl text-[#1e293b]">{metric.val}%</span>
-                              </div>
-                              <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
-                                 <motion.div 
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${metric.val}%` }}
-                                    transition={{ duration: 1.5, delay: i * 0.2 }}
-                                    className="h-full rounded-full relative"
-                                    style={{ 
-                                       backgroundColor: metric.color,
-                                       boxShadow: metric.glow
+                           <div className="flex flex-col">
+                              <span className="font-black text-sm text-[#1e293b]">{emp.name}</span>
+                              <div className="flex items-center gap-2">
+                                 <select 
+                                    value={emp.powerLevel || "דלפק"}
+                                    onChange={async (e) => {
+                                       await updateDoc(doc(db, getCollectionPath("users"), emp.id), { powerLevel: e.target.value });
                                     }}
+                                    className="text-[9px] font-black uppercase text-[#C5A059] bg-transparent outline-none cursor-pointer"
                                  >
-                                    <div className="absolute inset-0 bg-white/20 animate-pulse" />
-                                 </motion.div>
+                                    {roles.map(r => <option key={r} value={r}>{r}</option>)}
+                                 </select>
                               </div>
                            </div>
-                        ))}
-                     </div>
-
-                     <div className="pt-6 border-t border-slate-100">
-                        <div className="grid grid-cols-2 gap-4">
-                           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                              <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Total Training Clusters</p>
-                              <p className="text-xl font-black text-[#1e293b]">412</p>
-                           </div>
-                           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                              <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Knowledge Density</p>
-                              <p className="text-xl font-black text-[#1e293b]">High</p>
-                           </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                           <button onClick={() => startSandbox(emp)} className="p-2.5 bg-slate-100 text-slate-500 rounded-xl hover:bg-[#C5A059]/10 hover:text-[#C5A059] transition-all">
+                              <FlaskConical size={16} />
+                           </button>
+                           <button onClick={() => handleDeleteEmployee(emp.id)} className="p-2.5 bg-red-50 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all">
+                              <Trash2 size={16} />
+                           </button>
                         </div>
                      </div>
-                  </div>
+                  ))}
                </div>
-            )}
-         </div>
+               <button 
+                 onClick={() => setEditingEmployee(null)}
+                 className="w-full p-4 bg-slate-50 text-slate-400 font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all flex items-center justify-center gap-2 border-t border-slate-100"
+               >
+                 <Plus size={14} /> Add Security User
+               </button>
+            </div>
+          </section>
+
+          {/* Section 3: Audit Log (מלשינון) */}
+          <section className="space-y-6">
+            <div className="flex items-center justify-between mb-2 px-2">
+               <div className="flex items-center gap-3">
+                  <Activity className="text-[#C5A059]" size={20} />
+                  <h3 className="text-lg font-black uppercase tracking-tight">Audit Log / מלשינון</h3>
+               </div>
+               <button onClick={syncAllCollections} className="text-[10px] font-black text-[#C5A059] bg-[#C5A059]/10 px-3 py-1.5 rounded-lg active:scale-95 transition-all">
+                  FORCE SYNC ALL
+               </button>
+            </div>
+            
+            <div className="bg-slate-900 rounded-[32px] shadow-2xl p-4 md:p-6 overflow-hidden border border-white/5">
+                <div className="h-[400px] overflow-y-auto custom-scrollbar space-y-3 font-mono">
+                   {logs.map((log) => (
+                      <div key={log.id} className="group border-b border-white/5 pb-3">
+                         <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] text-emerald-400 font-bold tracking-tighter">
+                               [{log.event?.toUpperCase()}] 
+                            </span>
+                            <span className="text-[9px] text-slate-500">
+                               {log.timestamp ? format(log.timestamp.toDate(), "HH:mm:ss") : "--:--"}
+                            </span>
+                         </div>
+                         <div className="flex flex-col gap-1">
+                            <p className="text-[11px] text-slate-300 leading-tight">
+                               <span className="text-emerald-500/50">ID:</span> {log.userId || log.deviceId || "UNKNOWN"}
+                            </p>
+                            {log.text && <p className="text-xs text-white opacity-80 pl-2 border-l border-[#C5A059]/30 ml-1 py-1">{log.text}</p>}
+                            {log.location && (
+                               <p className="text-[9px] text-red-400 flex items-center gap-1">
+                                  <MapPin size={8} /> {log.location.lat.toFixed(4)}, {log.location.lng.toFixed(4)}
+                               </p>
+                            )}
+                         </div>
+                      </div>
+                   ))}
+                </div>
+            </div>
+          </section>
+
+          {/* Section 4: Live Intercept */}
+          <section className="space-y-6 pb-12">
+            <div className="flex items-center gap-3 mb-2 px-2">
+               <Smartphone className="text-[#C5A059]" size={20} />
+               <h3 className="text-lg font-black uppercase tracking-tight">Traffic Intercept</h3>
+            </div>
+            
+            <div className="bg-white rounded-[32px] shadow-sm border border-slate-200 p-6">
+                <div className="h-[300px] overflow-y-auto custom-scrollbar space-y-4 pr-1">
+                   {liveChats.map((chat) => (
+                      <div key={chat.id} className={`flex ${chat.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                         <div className={`p-4 rounded-2xl max-w-[85%] text-xs font-bold leading-relaxed shadow-sm ${chat.sender === 'user' ? 'bg-[#DCF8C6] border border-green-200' : 'bg-[#e2e8f0]'}`}>
+                            {chat.text}
+                            <div className="mt-1 text-[8px] text-slate-400 text-left">
+                               {chat.timestamp ? format(chat.timestamp.toDate(), "HH:mm") : ""}
+                            </div>
+                         </div>
+                      </div>
+                   ))}
+                </div>
+            </div>
+          </section>
+
+        </div>
       </main>
 
-      {/* Sandbox Modal */}
+      {/* Admin metrics overlay footer for CEO */}
+      {isCeo && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] px-4 pointer-events-none">
+           <div className="bg-slate-900/90 backdrop-blur-xl border border-emerald-500/30 rounded-full px-6 py-2 shadow-2xl flex items-center gap-8 pointer-events-auto">
+              <div className="flex items-center gap-2">
+                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                 <span className="text-[9px] font-black text-emerald-400 uppercase">HQ Global Oversight: {latestMetrics.globalOversight}%</span>
+              </div>
+              <div className="h-4 w-px bg-white/10" />
+              <div className="flex items-center gap-2 text-white/60">
+                 <ShieldCheck size={12} className="text-[#C5A059]" />
+                 <span className="text-[9px] font-black uppercase tracking-widest">SabanOS Protocol 3.0</span>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Sandbox Modal (Kept as is but styled better) */}
       <AnimatePresence>
         {isSandboxOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
             <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden flex flex-col h-[80vh]"
+              initial={{ scale: 0.9, opacity: 0, y: 50 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 50 }}
+              className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden flex flex-col h-[85vh] border border-[#C5A059]/20"
             >
-              <header className="p-6 bg-[#1e293b] text-white flex justify-between items-center">
+              <header className="p-6 bg-[#1e293b] text-white flex justify-between items-center flex-shrink-0">
                 <div className="flex items-center gap-4">
                    <div className="relative">
                       <img 
@@ -792,71 +627,24 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                       </div>
                    </div>
                    <div>
-                      <h4 className="font-black text-lg">סימולטור אימון DNA</h4>
+                      <h4 className="font-black text-lg">DNA Sandbox Simulator</h4>
                       <p className="text-[10px] text-[#C5A059] font-black uppercase tracking-widest">
-                         Mode: {editingEmployee?.powerLevel} | Candidate: {editingEmployee?.name}
+                         Context: {editingEmployee?.powerLevel} | Agent: NOA
                       </p>
                    </div>
                 </div>
-                <div className="flex items-center gap-4">
-                   <div className="bg-emerald-500 animate-pulse px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[9px] md:text-[10px] font-black text-white uppercase tracking-tighter">
-                      Simulation Active
-                   </div>
-                   <button 
-                      onClick={() => setIsSandboxOpen(false)}
-                      className="p-2 hover:bg-white/10 rounded-xl transition-all pointer-events-auto z-50"
-                   >
-                      יציאה
-                   </button>
-                </div>
+                <button 
+                   onClick={() => setIsSandboxOpen(false)}
+                   className="p-3 bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white rounded-xl transition-all"
+                >
+                   <X size={20} />
+                </button>
               </header>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50 custom-scrollbar">
-                 {/* Injection Panel */}
-                 <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-white p-4 rounded-3xl border border-[#C5A059]/30 shadow-sm space-y-3">
-                       <div className="flex items-center justify-between text-[10px] font-black uppercase text-[#C5A059]">
-                          <span>הזרקת חוקי התנהגות (Rules)</span>
-                          <ShieldCheck size={14} />
-                       </div>
-                       <textarea 
-                          value={userRules}
-                          onChange={e => setUserRules(e.target.value)}
-                          placeholder="למשל: תמיד לענות לו בקיצור, לא להציע הנחות..."
-                          className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-xs font-bold h-20 outline-none focus:border-[#C5A059]"
-                       />
-                       <button 
-                          onClick={handleApplyRules}
-                          className="w-full py-2 bg-[#1e293b] text-white rounded-lg text-[10px] font-black uppercase hover:bg-black transition-all"
-                       >
-                          Apply Behavioral Rules
-                       </button>
-                    </div>
-                    
-                    <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
-                       <div>
-                          <div className="flex items-center justify-between text-[10px] font-black uppercase text-slate-400">
-                             <span>ניתוח אישיות צילום (DNA Inject)</span>
-                             <Users size={14} />
-                          </div>
-                          <p className="text-[10px] text-slate-400 mt-2">ניתוח פסיכולוגי של תמונת הפרופיל לקביעת טון שיח מותאם.</p>
-                       </div>
-                       <button 
-                          onClick={handleMockImageAnalysis}
-                          disabled={isAnalyzingImage}
-                          className="w-full py-2 bg-slate-50 border border-slate-200 text-[#1e293b] rounded-lg text-[10px] font-black uppercase hover:border-[#C5A059] transition-all flex items-center justify-center gap-2"
-                       >
-                          {isAnalyzingImage ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, ease: "linear" }}><Activity size={12} /></motion.div> : <Search size={12} />}
-                          {isAnalyzingImage ? "Analyzing Faces..." : "Perform Personality Analysis"}
-                       </button>
-                    </div>
-                 </div>
-
-                 <div className="h-px bg-slate-200 my-4" />
-
                  {sandboxMessages.map(m => (
                     <div key={m.id} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                       <div className={`p-4 rounded-2xl max-w-[80%] shadow-sm ${m.sender === 'user' ? 'bg-[#1e293b] text-white rounded-tr-none' : 'bg-white text-[#1e293b] rounded-tl-none border border-slate-100'}`}>
+                       <div className={`p-4 rounded-3xl max-w-[85%] shadow-sm ${m.sender === 'user' ? 'bg-[#1e293b] text-white rounded-tr-none' : 'bg-white text-[#1e293b] rounded-tl-none border border-slate-200'}`}>
                           {m.sender === 'noa' ? (
                             <div className="noa-render text-[14px]" dangerouslySetInnerHTML={{ __html: m.text }} />
                           ) : (
@@ -867,7 +655,7 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                  ))}
                  {isSyncing && (
                     <div className="flex justify-start">
-                       <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm flex gap-1">
+                       <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm flex gap-1 border border-slate-100">
                           <div className="w-1.5 h-1.5 bg-[#C5A059] rounded-full animate-bounce" />
                           <div className="w-1.5 h-1.5 bg-[#C5A059] rounded-full animate-bounce [animation-delay:0.2s]" />
                           <div className="w-1.5 h-1.5 bg-[#C5A059] rounded-full animate-bounce [animation-delay:0.4s]" />
@@ -876,19 +664,19 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                  )}
               </div>
 
-              <footer className="p-6 bg-white border-t border-slate-100 flex gap-3">
+              <footer className="p-6 bg-white border-t border-slate-100 flex gap-3 flex-shrink-0">
                  <input 
                     value={sandboxInput}
                     onChange={e => setSandboxInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleSandboxSend()}
-                    placeholder="הקלד תגובה לסימולציה..."
+                    placeholder="Enter simulation response..."
                     className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none font-bold text-[#1e293b] focus:border-[#C5A059]"
                  />
                  <button 
                     onClick={handleSandboxSend}
-                    className="bg-[#1e293b] text-white px-8 rounded-2xl font-black hover:bg-slate-700 transition-all pointer-events-auto"
+                    className="bg-[#1e293b] text-white px-8 rounded-2xl font-black hover:bg-slate-700 transition-all shadow-lg active:scale-95"
                  >
-                    שלח
+                    Inject
                  </button>
               </footer>
             </motion.div>
@@ -897,10 +685,9 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
       </AnimatePresence>
 
       <style>{`
-        button { pointer-events: auto !important; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
       `}</style>
     </div>
   );

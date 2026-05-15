@@ -110,11 +110,13 @@ Harel's Personal Context: Married + 4. Multi-generational stage (from education 
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-flash-latest",
-      contents: history.map(h => ({
-        role: h.sender === "user" ? "user" : "model",
-        parts: [{ text: h.text }]
-      })),
+      model: "gemini-3-flash-preview",
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: history.map(h => `${h.sender === "user" ? "USER" : "NOA"}: ${h.text}`).join("\n") }]
+        }
+      ],
       config: {
         systemInstruction: SYSTEM_PROMPT + userDna + dnaContext + orderContext + simulationContext + ceoProtocol + familyDna + contextInfo + `\nCRITICAL UI CONSTRAINT: Ensure font-size is 18px or larger in your HTML. All clickable elements must have a minimum target size of 56px. OUTPUT RAW HTML STRING ONLY. NO MARKDOWN. MANDATORY FOOTER: SQL_BRIDGE: ACTIVE | DRIVE_SYNC: VERIFIED | SQL_SYNC: VERIFIED | LOC: ${context?.location?.lat || 0},${context?.location?.lng || 0} | DEV: ${context?.deviceId || "SABAN-OS"} | OVERSIGHT: ${context?.isCeoActive ? "ON" : "OFF"}`,
       },
