@@ -364,9 +364,9 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
     <div className="flex-1 bg-[#f8fafc] text-[#1e293b] flex flex-col md:flex-row h-screen font-['Heebo'] rtl" dir="rtl">
       {/* Sidebar */}
       <aside className="w-full md:w-80 bg-[#1e293b] text-white flex flex-col shadow-2xl z-30">
-        <div className="p-8 border-b border-white/10">
-          <div className="flex items-center gap-4 mb-6">
-             <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20">
+        <div className="p-4 md:p-8 border-b border-white/10">
+          <div className="flex items-center gap-4 mb-3 md:mb-6">
+             <div className="w-10 h-10 md:w-14 md:h-14 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20">
                 {isCeo ? <ShieldCheck size={32} className="text-emerald-400" /> : <LayoutDashboard size={32} className="text-[#C5A059]" />}
              </div>
              <div>
@@ -381,7 +381,7 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
         <nav className="flex-1 p-4 space-y-2 mt-4">
           <button 
             onClick={() => setActiveTab("malshinon")}
-            className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all ${activeTab === "malshinon" ? "bg-[#C5A059] text-white shadow-lg" : "hover:bg-white/5 text-slate-400 group-hover:text-white"}`}
+            className={`w-full flex items-center justify-between py-3 px-4 rounded-2xl transition-all ${activeTab === "malshinon" ? "bg-[#C5A059] text-white shadow-lg" : "hover:bg-white/5 text-slate-400 group-hover:text-white"}`}
           >
             <div className="flex items-center gap-4">
               <Activity size={20} />
@@ -391,24 +391,24 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
           </button>
           <button 
             onClick={() => setActiveTab("users")}
-            className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === "users" ? "bg-[#C5A059] text-white shadow-lg" : "hover:bg-white/5 text-slate-400"}`}
+            className={`w-full flex items-center gap-4 py-3 px-4 rounded-2xl transition-all ${activeTab === "users" ? "bg-[#C5A059] text-white shadow-lg" : "hover:bg-white/5 text-slate-400"}`}
           >
             <Users size={20} />
             <span className="font-bold">ניהול מורשי גישה</span>
           </button>
           <button 
             onClick={() => setActiveTab("training")}
-            className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === "training" ? "bg-[#C5A059] text-white shadow-lg" : "hover:bg-white/5 text-slate-400"}`}
+            className={`w-full flex items-center gap-4 py-3 px-4 rounded-2xl transition-all ${activeTab === "training" ? "bg-[#C5A059] text-white shadow-lg" : "hover:bg-white/5 text-slate-400"}`}
           >
             <FlaskConical size={20} />
             <span className="font-bold">מעבדת DNA סוכן</span>
           </button>
 
-          <div className="pt-4 mt-4 border-t border-white/10">
-             <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
+          <div className="pt-2 mt-2 border-t border-white/10">
+             <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10">
                 <div className="flex flex-col">
-                   <span className="text-xs font-bold text-[#C5A059] uppercase tracking-widest">Simulation Mode</span>
-                   <span className="text-[10px] text-white/50">Sandboxed Environment</span>
+                   <span className="text-[10px] md:text-xs font-bold text-[#C5A059] uppercase tracking-widest">Simulation Mode</span>
+                   <span className="text-[9px] text-white/50">Sandboxed Environment</span>
                 </div>
                 <button 
                   onClick={onToggleSimulation}
@@ -450,7 +450,7 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ repeat: Infinity, duration: 2 }}
                 onClick={onDismissAlert}
-                className="bg-red-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-3 shadow-xl shadow-red-600/30"
+                className="bg-red-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-2xl font-black flex items-center gap-3 shadow-xl shadow-red-600/30 text-sm md:text-base"
               >
                 <ShieldAlert size={22} />
                 ביטול התראת מיקום
@@ -486,14 +486,14 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                                  <span className="text-slate-400 text-[9px]">{log.timestamp ? format(log.timestamp.toDate(), "HH:mm:ss") : "--"}</span>
                               </div>
                               <div className="space-y-1 text-slate-600">
-                                 <p className="flex items-center gap-2">
+                                 <p className="flex items-center gap-2 text-[10px] md:text-xs">
                                     <Smartphone size={10} />
-                                    <span>מזהה:</span> <span className="font-bold truncate max-w-[150px]">{log.deviceId}</span>
+                                    <span className="opacity-60">מזהה:</span> <span className="font-bold truncate max-w-[150px]">{log.deviceId}</span>
                                  </p>
                                  {log.location && (
-                                    <p className="flex items-center gap-2 text-red-500/80">
+                                    <p className="flex items-center gap-2 text-red-500/80 text-[10px] md:text-xs">
                                        <MapPin size={10} />
-                                       <span>נ"צ:</span> <span className="text-[9px]">{log.location.lat.toFixed(4)}, {log.location.lng.toFixed(4)}</span>
+                                       <span className="opacity-60">נ"צ:</span> <span className="text-[9px] md:text-[11px]">{log.location.lat.toFixed(4)}, {log.location.lng.toFixed(4)}</span>
                                     </p>
                                  )}
                               </div>
@@ -548,42 +548,42 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                         </div>
                         
                         <div className="space-y-1">
-                           <label className="text-[10px] font-black text-slate-400 uppercase">שם מלא</label>
+                           <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase">שם מלא</label>
                            <input 
                               value={newEmployee.name}
                               onChange={e => setNewEmployee({...newEmployee, name: e.target.value})}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-[#1e293b] font-bold h-12"
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 md:p-4 text-[#1e293b] font-bold h-11 md:h-12 text-sm md:text-base"
                               placeholder="ישראל ישראלי"
                            />
                         </div>
                         
                         <div className="space-y-1">
-                           <label className="text-[10px] font-black text-slate-400 uppercase">אימייל</label>
+                           <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase">אימייל</label>
                            <input 
                               value={newEmployee.email}
                               onChange={e => setNewEmployee({...newEmployee, email: e.target.value})}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-left text-[#1e293b] font-bold h-12"
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 md:p-4 text-left text-[#1e293b] font-bold h-11 md:h-12 text-sm md:text-base"
                               placeholder="user@saban.co.il"
                            />
                         </div>
 
                         <div className="space-y-1">
-                           <label className="text-[10px] font-black text-slate-400 uppercase">טלפון (מזהה)</label>
+                           <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase">טלפון (מזהה)</label>
                            <input 
                               value={newEmployee.phone}
                               disabled={!!editingEmployee}
                               onChange={e => setNewEmployee({...newEmployee, phone: e.target.value})}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-[#1e293b] font-mono h-12"
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 md:p-4 text-[#1e293b] font-mono h-11 md:h-12 text-sm md:text-base"
                               placeholder="05XXXXXXXX"
                            />
                         </div>
 
                         <div className="space-y-1">
-                           <label className="text-[10px] font-black text-slate-400 uppercase">תפקיד</label>
+                           <label className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase">תפקיד</label>
                            <select 
                               value={newEmployee.power}
                               onChange={e => setNewEmployee({...newEmployee, power: e.target.value})}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 h-12 text-[#1e293b] font-bold"
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 h-11 md:h-12 text-[#1e293b] font-bold text-sm md:text-base"
                            >
                               {roles.map((role, idx) => (
                                 <option key={role} value={role}>{role}</option>
@@ -594,7 +594,7 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                         <div className="flex flex-col sm:flex-row gap-3 pt-4">
                            <button 
                               onClick={handleCreateEmployee}
-                              className="flex-1 bg-[#1e293b] text-white py-4 rounded-xl font-black h-14 flex items-center justify-center gap-2"
+                              className="flex-1 bg-[#1e293b] text-white py-3 md:py-4 rounded-xl font-black h-12 md:h-14 flex items-center justify-center gap-2"
                            >
                               <Save size={18} />
                               <span>{editingEmployee ? "עדכן" : "שמור"}</span>
@@ -602,7 +602,7 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                            {editingEmployee && (
                               <button 
                                  onClick={() => { setEditingEmployee(null); setNewEmployee({ name: "", phone: "", email: "", power: "דלפק", avatar: "" }); }}
-                                 className="flex-1 bg-slate-100 text-slate-500 py-4 rounded-xl font-black h-14"
+                                 className="flex-1 bg-slate-100 text-slate-500 py-3 md:py-4 rounded-xl font-black h-12 md:h-14"
                               >
                                  ביטול
                               </button>
@@ -799,7 +799,7 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                    </div>
                 </div>
                 <div className="flex items-center gap-4">
-                   <div className="bg-emerald-500 animate-pulse px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-tighter">
+                   <div className="bg-emerald-500 animate-pulse px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[9px] md:text-[10px] font-black text-white uppercase tracking-tighter">
                       Simulation Active
                    </div>
                    <button 

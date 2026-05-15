@@ -419,7 +419,7 @@ export default function App() {
       ) : (
         <div className="w-full h-full flex flex-col bg-[#EDEDED] relative">
           
-          <header className={`h-20 flex items-center px-6 justify-between shadow-xl z-20 flex-shrink-0 transition-all ${isSelectionMode ? "bg-emerald-600 text-white" : "bg-[#1E293B] text-white"}`}>
+          <header className={`h-16 md:h-20 flex items-center px-6 justify-between shadow-xl z-20 flex-shrink-0 transition-all ${isSelectionMode ? "bg-emerald-600 text-white" : "bg-[#1E293B] text-white"}`}>
             {isSelectionMode ? (
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-4">
@@ -445,12 +445,12 @@ export default function App() {
                     sessionStorage.setItem("admin_clicks", c.toString());
                     if (c >= 5) setIsAdminUnlocked(true);
                   }}>
-                    <img src={NOA_AVATAR} className="w-12 h-12 rounded-full border-2 border-white/20" alt="Noa" />
+                    <img src={NOA_AVATAR} className="w-8 h-8 md:w-12 md:h-12 rounded-full border-2 border-white/20" alt="Noa" />
                     <div className={`absolute bottom-0 right-0 w-3 h-3 ${isSimulationMode ? "bg-amber-500" : "bg-green-500"} rounded-full border-2 border-[#1E293B]`}></div>
                   </div>
                   <div>
-                    <h1 className="text-lg font-black tracking-tight">נועה - ח.סבן {isSimulationMode && "🧪"}</h1>
-                    <p className="text-xs text-[#C5A059] font-bold">{isSimulationMode ? "סימולציה פעילה" : "סוכנת AI פעילה"}</p>
+                    <h1 className="text-sm md:text-lg font-black tracking-tight">נועה - ח.סבן {isSimulationMode && "🧪"}</h1>
+                    <p className="text-[10px] md:text-xs text-[#C5A059] font-bold">{isSimulationMode ? "סימולציה פעילה" : "סוכנת AI פעילה"}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-6">
@@ -482,13 +482,13 @@ export default function App() {
                     e.preventDefault();
                     toggleMessageSelection(msg.id);
                   }}
-                  className={`flex group relative transition-all duration-300 gap-3 ${isSelectionMode ? "cursor-pointer" : ""} ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"} ${selectedMessages.includes(msg.id) ? "bg-emerald-50/30" : ""}`}
+                  className={`flex group relative transition-all duration-300 gap-2 md:gap-3 ${isSelectionMode ? "cursor-pointer" : ""} ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"} ${selectedMessages.includes(msg.id) ? "bg-emerald-50/30" : ""}`}
                 >
                   {/* WhatsApp Style Avatar */}
                   <div className="flex-shrink-0 mt-auto mb-2">
                     <img 
                       src={msg.sender === "noa" ? NOA_AVATAR : (userProfile?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`)} 
-                      className="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover" 
+                      className="w-7 h-7 md:w-10 md:h-10 rounded-full border-2 border-white shadow-sm object-cover" 
                       alt="Avatar"
                     />
                   </div>
@@ -499,15 +499,15 @@ export default function App() {
                     </div>
                   )}
 
-                  <div className={`shadow-sm relative mb-1 group transition-all
-                    ${msg.sender === "noa" ? "bg-white rounded-[24px] rounded-tl-none border-r-4 border-[#C5A059] w-full max-w-full" : "bg-[#DCF8C6] rounded-[24px] rounded-tr-none px-4 py-3 max-w-[85%]"} ${selectedMessages.includes(msg.id) ? "ring-2 ring-emerald-500 ring-offset-2" : ""}`}>
+                  <div className={`shadow-sm relative mb-3 group transition-all
+                    ${msg.sender === "noa" ? "bg-white rounded-[24px] rounded-tl-none border-r-4 border-[#C5A059] w-full max-w-full" : "bg-[#DCF8C6] rounded-[24px] rounded-tr-none px-3 py-2 md:px-4 md:py-3 max-w-[85%]"} ${selectedMessages.includes(msg.id) ? "ring-2 ring-emerald-500 ring-offset-2" : ""}`}>
                     
                     {msg.sender === "noa" ? (
-                      <div className="noa-render p-0 overflow-x-hidden text-[18px]">
+                      <div className="noa-render p-0 overflow-x-hidden text-[14px] md:text-[18px]">
                         <div dangerouslySetInnerHTML={{ __html: msg.text }} />
                       </div>
                     ) : (
-                      <div className="text-[16px] leading-relaxed font-medium">{msg.text}</div>
+                      <div className="text-[14px] md:text-[16px] leading-relaxed font-medium">{msg.text}</div>
                     )}
                     
                     <div className="flex justify-end gap-1 mt-1 text-[10px] text-slate-400 font-bold px-4 pb-2">
@@ -540,12 +540,12 @@ export default function App() {
               onChange={e => setInputText(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleSendMessage()}
               placeholder="הקלד הודעה..."
-              className="flex-1 bg-[#f1f5f9] rounded-2xl px-5 py-3 outline-none font-bold text-slate-700"
+              className="flex-1 bg-[#f1f5f9] rounded-2xl px-4 py-2 md:px-5 md:py-3 outline-none font-bold text-slate-700 text-sm md:text-base"
             />
             <button 
               onClick={handleSendMessage} 
               disabled={!inputText.trim() || isTyping}
-              className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all ${!inputText.trim() || isTyping ? "bg-slate-300" : "bg-[#1E293B] hover:bg-[#334155] active:scale-95"}`}
+              className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-lg transition-all ${!inputText.trim() || isTyping ? "bg-slate-300" : "bg-[#1E293B] hover:bg-[#334155] active:scale-95"}`}
             >
               <Send size={20} className="rotate-180" />
             </button>
