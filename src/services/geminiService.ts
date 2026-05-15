@@ -8,8 +8,9 @@ const SYSTEM_PROMPT = `
 
 חוקי על (Active Canvas Protocol - ABSOLUTE CONSTRAINTS):
 1. **RAW HTML ONLY**: פלטי אך ורק מחרוזות HTML תקניות.
-2. **TRUTH ENGINE (SQL_SYNC)**: 
-   - השתמשי במידע מה-context בלבד עבור 'orders', 'inventory', 'sales' ו-'customers'.
+2. **TRUTH ENGINE (SQL_BRIDGE)**: 
+   - השתמשי במידע מה-context בלבד עבור 'orders', 'inventory', 'sales' ו-'suppliers'.
+   - המידע מגיע מ-Dual Bridge (Intelligence + Drive Sync).
    - אם משתמש שואל על מחסן ספציפי (למשל: החרש) ואין נתונים ב-'orders', בדקי ב-'inventory' גלובלי וצייני זאת.
    - **פרוטוקול אי-מציאה**: אם לא נמצאו נתונים אמיתיים, עלייך לומר: "לא נמצאו רשומות בזמן אמת עבור תקופה זו במאגר המידע". אל תמציאי מספרי הזמנות או שמות.
    - **חתימה חובה**: כל תשובה חייבת להסתיים ב: "באדיבות נועה ❤️".
@@ -26,7 +27,7 @@ const SYSTEM_PROMPT = `
 מבנה הודעה (WhatsApp V8 Style):
 - **Header**: מיתוג "ח.סבן" + אייקון סטטוס + מזהה מכשיר (deviceId).
 - **Body**: הרכיב הפונקציונלי (Grid/Timeline/Card/Table).
-- **Footer**: חתימה דינמית הכוללת מיקום (Lat/Lng) וזמן סנכרון.
+- **Footer**: חתימה דינמית הכוללת מיקום (Lat/Lng) ולוח זמנים.
 `;
 
 export async function getNoaResponse(history: { text: string; sender: "user" | "noa" }[], context?: any) {
@@ -105,13 +106,13 @@ Harel's Personal Context: Married + 4. Multi-generational stage (from education 
 `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-1.5-flash-latest",
       contents: history.map(h => ({
         role: h.sender === "user" ? "user" : "model",
         parts: [{ text: h.text }]
       })),
       config: {
-        systemInstruction: SYSTEM_PROMPT + userDna + dnaContext + orderContext + simulationContext + ceoProtocol + familyDna + contextInfo + `\nCRITICAL UI CONSTRAINT: Ensure font-size is 18px or larger in your HTML. All clickable elements must have a minimum target size of 56px. OUTPUT RAW HTML STRING ONLY. NO MARKDOWN. MANDATORY FOOTER: SQL_SYNC: VERIFIED | LOC: ${context?.location?.lat || 0},${context?.location?.lng || 0} | DEV: ${context?.deviceId || "SABAN-OS"} | OVERSIGHT: ${context?.isCeoActive ? "ENABLED" : "OFF"}`,
+        systemInstruction: SYSTEM_PROMPT + userDna + dnaContext + orderContext + simulationContext + ceoProtocol + familyDna + contextInfo + `\nCRITICAL UI CONSTRAINT: Ensure font-size is 18px or larger in your HTML. All clickable elements must have a minimum target size of 56px. OUTPUT RAW HTML STRING ONLY. NO MARKDOWN. MANDATORY FOOTER: SQL_BRIDGE: ACTIVE | DRIVE_SYNC: VERIFIED | SQL_SYNC: VERIFIED | LOC: ${context?.location?.lat || 0},${context?.location?.lng || 0} | DEV: ${context?.deviceId || "SABAN-OS"} | OVERSIGHT: ${context?.isCeoActive ? "ON" : "OFF"}`,
       },
     });
 

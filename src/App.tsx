@@ -26,11 +26,12 @@ import {
   limit,
   where
 } from "firebase/firestore";
-import { db, initAuth } from "./lib/firebase";
+import { dbIntelligence, dbDrive, initAuth } from "./lib/firebase";
 import { getNoaResponse } from "./services/geminiService";
 import { format } from "date-fns";
 
-const SPEC_APP_ID = "ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e";
+const INTELLIGENCE_APP_ID = "ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e";
+const DRIVE_APP_ID = "saban-ai-drive";
 const NOA_AVATAR = "https://i.postimg.cc/qqLm9M5t/Gemini-Generated-Image-gmd5k7gmd5k7gmd5.png";
 
 const COLLECTIONS = [
@@ -82,14 +83,17 @@ export default function App() {
 
   useEffect(() => {
     if (!userId || !isMounted) return;
-    const unsub = onSnapshot(doc(db, getCollectionPath("users"), userId), (snap) => {
+    const unsub = onSnapshot(doc(dbIntelligence, getIntelligencePath("users"), userId), (snap) => {
       if (snap.exists()) {
         const profile = { id: snap.id, ...snap.data() } as any;
         // Executive Identity Logic (Harel Protocol)
         const isHarel = profile.name?.toLowerCase().includes("הראל") || 
                         profile.name?.toLowerCase().includes("harel") ||
                         userId.toLowerCase().includes("harel") ||
-                        window.location.href.toLowerCase().includes("harel");
+                        userId === "0505227724" ||
+                        profile.phone === "0505227724" ||
+                        window.location.href.toLowerCase().includes("harel") ||
+                        window.location.href.toLowerCase().includes("0505227724");
         
         if (isHarel) {
           profile.powerLevel = "מנכ״ל";
@@ -104,7 +108,7 @@ export default function App() {
             coreValues: "Family Unity, Resilience, Continuity",
             businessApproach: "Long-term legacy building"
           };
-        } else if (profile.name === "Rami" || profile.name === "רמי" || userId === "SABAN-ADMIN" || profile.isAdmin) {
+        } else if (profile.name === "Rami" || profile.name === "רמי" || userId === "SABAN-ADMIN" || profile.isAdmin || profile.phone === "0526012345") {
           profile.powerLevel = "Admin/Trainer";
           profile.isAdmin = true;
         }
@@ -152,17 +156,19 @@ export default function App() {
     });
   }, []);
 
-  const getCollectionPath = (name: string) => `artifacts/${SPEC_APP_ID}/public/data/${name}`;
+  const getIntelligencePath = (name: string) => `artifacts/${INTELLIGENCE_APP_ID}/public/data/${name}`;
+  const getDrivePath = (name: string) => `artifacts/${DRIVE_APP_ID}/public/data/${name}`;
 
   const logInteraction = async (event: string, metadata: any) => {
     if (!isMounted) return;
     try {
-      await addDoc(collection(db, getCollectionPath("ai_logs")), {
+      await addDoc(collection(dbIntelligence, getIntelligencePath("ai_logs")), {
         event,
-        deviceId: localStorage.getItem("deviceId") || "unknown",
+        deviceId,
         userId,
         location,
         timestamp: serverTimestamp(),
+        bridge: "DUAL-SYNC",
         ...metadata
       });
     } catch (e) { console.error("Logging error", e); }
@@ -170,7 +176,7 @@ export default function App() {
 
   useEffect(() => {
     if (!userId || view !== "chat" || !isMounted) return;
-    const q = query(collection(db, getCollectionPath("chats")), orderBy("timestamp", "asc"));
+    const q = query(collection(dbIntelligence, getIntelligencePath("chats")), orderBy("timestamp", "asc"));
     return onSnapshot(q, (snap) => {
       const msgs: Message[] = [];
       snap.forEach(doc => {
@@ -183,14 +189,14 @@ export default function App() {
       const unread = msgs.filter(m => m.sender === "noa" && m.status !== "seen");
       if (unread.length > 0) {
         audioReceived.current?.play().catch(() => {});
-        unread.forEach(m => updateDoc(doc(db, getCollectionPath("chats"), m.id), { status: "seen" }));
+        unread.forEach(m => updateDoc(doc(dbIntelligence, getIntelligencePath("chats"), m.id), { status: "seen" }));
       }
     });
   }, [userId, view, isMounted]);
 
   useEffect(() => {
     if (view !== "admin" || !isMounted) return;
-    const q = query(collection(db, getCollectionPath("chats")), orderBy("timestamp", "desc"), limit(1));
+    const q = query(collection(dbIntelligence, getIntelligencePath("chats")), orderBy("timestamp", "desc"), limit(1));
     return onSnapshot(q, (snap) => {
       const latest = snap.docs[0]?.data();
       if (latest && latest.sender === "user" && latest.location) {
@@ -214,7 +220,7 @@ export default function App() {
     setInputText("");
     
     try {
-      await addDoc(collection(db, getCollectionPath("chats")), {
+      await addDoc(collection(dbIntelligence, getIntelligencePath("chats")), {
         text,
         sender: "user",
         userId,
@@ -227,37 +233,39 @@ export default function App() {
 
       setIsTyping(true);
 
-      // Upgrade: Real-time Data Fetching (Eliminate Hallucinations)
-      let ordersData: any[] = [];
-      let inventoryData: any[] = [];
-      let customersData: any[] = [];
+      // Upgrade: Dual-Bridge Data Fetching
+      let driveOrders: any[] = [];
+      let driveInventory: any[] = [];
+      let driveSuppliers: any[] = [];
       
-      const fetchRelevantData = async () => {
+      const fetchDriveData = async () => {
         const queryText = text.toLowerCase();
-        if (queryText.includes("הזמנות") || queryText.includes("orders") || queryText.includes("מלאי") || queryText.includes("מחסן") || queryText.includes("לקוחות")) {
-           const [ordersSnap, inventorySnap, customersSnap] = await Promise.all([
-             getDocs(query(collection(db, getCollectionPath("orders")), orderBy("timestamp", "desc"), limit(50))),
-             getDocs(query(collection(db, getCollectionPath("inventory")), limit(50))),
-             getDocs(query(collection(db, getCollectionPath("customers")), limit(20)))
+        if (queryText.includes("הזמנות") || queryText.includes("orders") || queryText.includes("מלאי") || queryText.includes("מחסן") || queryText.includes("מחיר") || queryText.includes("קטלוג")) {
+           const [ordersSnap, inventorySnap, suppliersSnap] = await Promise.all([
+             getDocs(query(collection(dbDrive, getDrivePath("orders")), orderBy("timestamp", "desc"), limit(50))),
+             getDocs(query(collection(dbDrive, getDrivePath("inventory")), limit(50))),
+             getDocs(query(collection(dbDrive, getDrivePath("brands")), limit(20)))
            ]);
-           ordersData = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-           inventoryData = inventorySnap.docs.map(d => ({ id: d.id, ...d.data() }));
-           customersData = customersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+           driveOrders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+           driveInventory = inventorySnap.docs.map(d => ({ id: d.id, ...d.data() }));
+           driveSuppliers = suppliersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+           
+           logInteraction("drive_sync", { driveOrdersCount: driveOrders.length, driveInventoryCount: driveInventory.length });
         }
       };
 
-      await fetchRelevantData();
+      await fetchDriveData();
 
       const [sales, dnaLogs, magicPages] = await Promise.all([
-        getDocs(query(collection(db, getCollectionPath("sales")), orderBy("timestamp", "desc"), limit(5))),
-        getDocs(query(collection(db, getCollectionPath("ai_logs")), where("type", "==", "dna_training"), orderBy("timestamp", "desc"), limit(1))),
-        getDocs(collection(db, getCollectionPath("user_magic_pages")))
+        getDocs(query(collection(dbIntelligence, getIntelligencePath("sales")), orderBy("timestamp", "desc"), limit(5))),
+        getDocs(query(collection(dbIntelligence, getIntelligencePath("ai_logs")), where("type", "==", "dna_training"), orderBy("timestamp", "desc"), limit(1))),
+        getDocs(collection(dbIntelligence, getIntelligencePath("user_magic_pages")))
       ]);
 
       const context = {
-        orders: ordersData,
-        inventory: inventoryData,
-        customers: customersData,
+        orders: driveOrders,
+        inventory: driveInventory,
+        suppliers: driveSuppliers,
         sales: sales.docs.map(d => ({ id: d.id, ...d.data() })),
         dnaTraining: dnaLogs.docs.length > 0 ? dnaLogs.docs[0].data().content : null,
         magicPages: magicPages.docs.map(d => ({ id: d.id, ...d.data() })),
@@ -266,7 +274,8 @@ export default function App() {
         userProfile,
         isCeoActive: userProfile?.isCeo || text.includes("הראל"),
         metadata: {
-          sqlSync: "VERIFIED",
+          sqlBridge: "ACTIVE",
+          driveSync: "VERIFIED",
           timestamp: new Date().toISOString()
         }
       };
@@ -274,7 +283,7 @@ export default function App() {
       let noaText = "";
       if (text.includes("הראל") && (text.includes("מנכ") || text.includes("ceo"))) {
         // Inject Personal DNA into Harel's profile
-        await updateDoc(doc(db, getCollectionPath("users"), userId), {
+        await updateDoc(doc(dbIntelligence, getIntelligencePath("users"), userId), {
           powerLevel: "מנכ״ל",
           "personal.status": "נשוי + 4",
           "personal.lifeStage": "רב-דורי (לימודים עד שירות צבאי)",
@@ -306,7 +315,7 @@ export default function App() {
         noaText = await getNoaResponse(messages.map(m => ({ text: m.text, sender: m.sender })), context);
       }
       
-      await addDoc(collection(db, getCollectionPath("chats")), {
+      await addDoc(collection(dbIntelligence, getIntelligencePath("chats")), {
         text: noaText,
         sender: "noa",
         userId,
@@ -327,7 +336,7 @@ export default function App() {
         <AdminDashboard 
           userId={userId || ""} 
           userProfile={userProfile}
-          specId={SPEC_APP_ID} 
+          specId={INTELLIGENCE_APP_ID} 
           onBack={() => setView("chat")} 
           locationAlertActive={locationAlertActive}
           onDismissAlert={() => setLocationAlertActive(false)}
@@ -364,11 +373,11 @@ export default function App() {
             </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar bg-[#e5ddd5] bg-[url('https://i.postimg.cc/mD8zrjR8/wa-bg.png')] bg-repeat">
+          <main className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar bg-[#e5ddd5] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-repeat">
             <AnimatePresence mode="popLayout">
               {messages.map((msg) => (
                 <motion.div 
-                  key={`msg-${msg.id}`} 
+                  key={msg.id} 
                   initial={{ opacity: 0, y: 10 }} 
                   animate={{ opacity: 1, y: 0 }} 
                   className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}

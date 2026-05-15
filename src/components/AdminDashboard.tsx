@@ -34,7 +34,7 @@ import {
   deleteDoc,
   updateDoc
 } from "firebase/firestore";
-import { db } from "../lib/firebase";
+import { dbIntelligence as db, dbDrive } from "../lib/firebase";
 import { motion, AnimatePresence } from "motion/react";
 import { format } from "date-fns";
 import { getNoaResponse } from "../services/geminiService";
@@ -121,15 +121,16 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
      setIsSyncing(true);
      setSyncProgress(0);
      try {
-        const collections = [
-          "ai_logs", "brands", "bridge_sessions", "categories", "chats", 
-          "customers", "drivers", "encyclopedia_categories", "encyclopedia_items", 
-          "internal_team_chats", "inventory", "morning_reports", "office_messages", 
-          "orders", "reminders", "sales", "user_magic_pages", "user_settings", "users"
-        ];
-        for (let i = 0; i < collections.length; i++) {
-           await getDocs(query(collection(db, getCollectionPath(collections[i])), limit(1)));
-           setSyncProgress(Math.floor(((i + 1) / collections.length) * 100));
+        const intelligenceCollections = ["ai_logs", "bridge_sessions", "chats", "internal_team_chats", "sales", "user_magic_pages", "user_settings", "users", "reminders"];
+        const driveCollections = ["brands", "categories", "customers", "drivers", "encyclopedia_categories", "encyclopedia_items", "inventory", "morning_reports", "office_messages", "orders"];
+        
+        const allCollections = [...intelligenceCollections, ...driveCollections];
+        
+        for (let i = 0; i < allCollections.length; i++) {
+           const coll = allCollections[i];
+           const targetDb = intelligenceCollections.includes(coll) ? db : dbDrive;
+           await getDocs(query(collection(targetDb, getCollectionPath(coll)), limit(1)));
+           setSyncProgress(Math.floor(((i + 1) / allCollections.length) * 100));
         }
         setSyncSuccess(true);
         setTimeout(() => setSyncSuccess(false), 3000);
