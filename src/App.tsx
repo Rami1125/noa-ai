@@ -22,6 +22,7 @@ import {
   serverTimestamp, 
   doc,
   updateDoc,
+  setDoc,
   getDocs,
   limit,
   where
@@ -116,9 +117,19 @@ export default function App() {
         setUserProfile(profile);
         localStorage.setItem("saban_user_profile", JSON.stringify(profile));
       } else {
-        if (userId === "SABAN-ADMIN") {
-          setUserProfile({ name: "Rami", powerLevel: "Admin/Trainer", isAdmin: true });
-        }
+        // Auto-create profile for first-time users or specific IDs
+        const isHarel = userId === "0505227724" || userId.toLowerCase().includes("harel");
+        const isAdmin = userId === "SABAN-ADMIN" || userId === "0526012345";
+        
+        const initialProfile = {
+          name: isHarel ? "הראל אידלסטון" : (isAdmin ? "Rami" : "משתמש חדש"),
+          phone: isHarel ? "0505227724" : (userId.match(/^\d+$/) ? userId : ""),
+          createdAt: serverTimestamp(),
+          role: isHarel ? "CEO" : (isAdmin ? "Admin" : "User"),
+          isAdmin: isAdmin || isHarel
+        };
+        
+        setDoc(doc(dbIntelligence, getIntelligencePath("users"), userId), initialProfile);
       }
     });
     return () => unsub();
