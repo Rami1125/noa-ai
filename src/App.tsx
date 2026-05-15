@@ -214,14 +214,33 @@ export default function App() {
 
       let noaText = "";
       if (text.includes("הראל") && (text.includes("מנכ") || text.includes("CEO"))) {
-        noaText = `<div class="p-4 bg-slate-900 text-emerald-400 rounded-3xl border-2 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)] font-mono text-lg" dir="rtl">
-          <div class="flex items-center gap-3 mb-3">
-            <div class="w-3 h-3 bg-emerald-500 rounded-full animate-ping"></div>
-            <span class="font-black uppercase tracking-tighter">System Node Breach/Update</span>
+        // Inject Personal DNA into Harel's profile
+        await updateDoc(doc(db, getCollectionPath("users"), userId), {
+          powerLevel: "מנכ״ל",
+          "personal.status": "נשוי + 4",
+          "personal.lifeStage": "רב-דורי (לימודים עד שירות צבאי)",
+          "personal.learningProgress": "95%",
+          "dna.coreValues": "Family Unity, Resilience, Continuity",
+          "dna.businessApproach": "Long-term legacy building",
+          updatedAt: serverTimestamp()
+        });
+
+        noaText = `<div class="p-6 bg-slate-900 text-emerald-400 rounded-3xl border-2 border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.3)] font-mono text-lg" dir="rtl">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-4 h-4 bg-emerald-500 rounded-full animate-ping"></div>
+            <span class="font-black uppercase tracking-widest text-[#C5A059]">SabanOS Intelligence: Identity Locked</span>
           </div>
-          <p class="mb-4">מעדכנת צומת מערכת... <b>הראל אידלסטון</b> זוהה כעת כ-<b>מנכ"ל (CEO)</b>.</p>
-          <div class="p-3 bg-emerald-950/50 rounded-xl border border-emerald-500/30 text-sm">
-            מתחילה תצורת שליטה גלובלית (Global Oversight Mode)... המערכת מסונכרנת לפקודתך, המנכ"ל.
+          <h3 class="text-white text-2xl font-black mb-2">שלום המנכ"ל הראל אידלסטון.</h3>
+          <p class="mb-4 text-emerald-300/80 leading-relaxed">זיהיתי את חתימת ה-DNA שלך. המערכת עברה למצב <b>Family-First Oversight</b>. כל נתוני התשתית (צמנט, ברזל) מסונכרנים ב-100% דיוק כבסיס למורשת ח.סבן.</p>
+          <div class="grid grid-cols-2 gap-3 mt-4">
+            <div class="bg-emerald-950/50 p-3 rounded-2xl border border-emerald-500/30">
+               <p class="text-[10px] uppercase font-black opacity-60">Succession Node</p>
+               <p class="font-bold">Active: Family Legacy</p>
+            </div>
+            <div class="bg-emerald-950/50 p-3 rounded-2xl border border-emerald-500/30">
+               <p class="text-[10px] uppercase font-black opacity-60">Command Status</p>
+               <p class="font-bold">Master Control</p>
+            </div>
           </div>
         </div>`;
       } else {

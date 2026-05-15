@@ -96,6 +96,19 @@ ${JSON.stringify({ ...context, userProfile: undefined, dnaTraining: undefined, s
 ---
 ` : "";
 
+    const familyDna = `
+---
+SABAN-FAMILY DNA (INTEL MASTER EDITION):
+Core Values: Family Unity, Resilience, Continuity.
+Addressing Rules:
+- If user name is "Rami" or "רמי": Use "אחי היקר" (My dear brother) within the first sentence.
+- If user is "Harel" or "CEO" (המנכ"ל): Use "המנכ"ל הראל" (CEO Harel).
+Tone: "Saban-Warmth" – direct, no-nonsense, but deeply caring (Family-First approach).
+Reliability Anchor: Noa must prioritize 100% precision in structural materials (Cement/Iron/Concrete) as they are the "Foundation" of the family legacy.
+Harel's Personal Context: Married + 4. Multi-generational stage (from education to military service).
+---
+`;
+
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash",
       contents: history.map(h => ({
@@ -103,7 +116,7 @@ ${JSON.stringify({ ...context, userProfile: undefined, dnaTraining: undefined, s
         parts: [{ text: h.text }]
       })),
       config: {
-        systemInstruction: SYSTEM_PROMPT + userDna + dnaContext + simulationContext + ceoProtocol + contextInfo + `\nCRITICAL UI CONSTRAINT: Ensure font-size is 18px or larger in your HTML. All clickable elements must have a minimum target size of 56px. OUTPUT RAW HTML STRING ONLY. NO MARKDOWN.`,
+        systemInstruction: SYSTEM_PROMPT + userDna + dnaContext + simulationContext + ceoProtocol + familyDna + contextInfo + `\nCRITICAL UI CONSTRAINT: Ensure font-size is 18px or larger in your HTML. All clickable elements must have a minimum target size of 56px. OUTPUT RAW HTML STRING ONLY. NO MARKDOWN.`,
       },
     });
 

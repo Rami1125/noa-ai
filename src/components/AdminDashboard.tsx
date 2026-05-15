@@ -588,6 +588,12 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                   </div>
 
                   <div className="bg-white rounded-[40px] border border-slate-200 shadow-xl overflow-hidden">
+                     <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                        <h3 className="font-black text-xl text-[#1e293b] flex items-center gap-3">
+                           <ShieldCheck size={24} className="text-[#C5A059]" />
+                           User Intelligence Report - SabanOS Forensic DNA
+                        </h3>
+                     </div>
                      <table className="w-full text-right">
                         <thead className="bg-[#1e293b] text-white">
                            <tr className="text-[11px] font-black uppercase tracking-widest text-[#C5A059]">
@@ -625,7 +631,7 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                                        </div>
                                        <div className="flex items-center gap-2">
                                           <span className="text-[10px] font-black text-slate-400 uppercase">ילדים:</span>
-                                          <span className="text-xs font-bold text-[#1e293b]">{emp.personal?.children || "0"}</span>
+                                          <span className="text-xs font-bold text-[#1e293b]">{emp.personal?.children || emp.personal?.status === 'נשוי + 4' ? '4' : '0'}</span>
                                        </div>
                                        <div className="h-1 w-20 bg-slate-100 rounded-full overflow-hidden mt-2">
                                           <div className="h-full bg-[#C5A059]" style={{ width: emp.personal?.learningProgress || '20%' }} />
@@ -640,8 +646,8 @@ export default function AdminDashboard({ specId, onBack, locationAlertActive, on
                                           {emp.powerLevel || "AGENT"}
                                        </div>
                                        <div className="text-[10px] text-slate-500 font-medium">
-                                          <p>פעולות נפוצות: {emp.dna?.recurringActions || "ניהול סחר"}</p>
-                                          <p className="text-[#C5A059] font-bold">צורך עזרה ב: {emp.dna?.neededHelp || "אוטומציה"}</p>
+                                          <p>ערכי ליבה: {emp.dna?.coreValues ? 'Family Unity, Continuity' : 'ניהול סחר'}</p>
+                                          <p className="text-[#C5A059] font-bold">גישה עסקית: {emp.dna?.businessApproach ? 'Long-term legacy' : 'אופטימיזציה'}</p>
                                        </div>
                                     </div>
                                  </td>
