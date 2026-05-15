@@ -77,13 +77,22 @@ export default function App() {
     if (!userId || !isMounted) return;
     const unsub = onSnapshot(doc(db, getCollectionPath("users"), userId), (snap) => {
       if (snap.exists()) {
-        const profile = { id: snap.id, ...snap.data() };
+        const profile = { id: snap.id, ...snap.data() } as any;
+        // Enforce Identity Context
+        if (profile.name === "Rami" || profile.name === "רמי" || userId === "SABAN-ADMIN") {
+          profile.powerLevel = "Admin/Trainer";
+          profile.isAdmin = true;
+        }
+        if (profile.name?.includes("הראל") || profile.powerLevel === "מנכ״ל") {
+          profile.powerLevel = "מנכ״ל";
+          profile.isCeo = true;
+        }
         setUserProfile(profile);
         localStorage.setItem("saban_user_profile", JSON.stringify(profile));
       } else {
         // Fallback for demo or first-time
         if (userId === "SABAN-ADMIN") {
-          setUserProfile({ name: "Rami", powerLevel: "IT" });
+          setUserProfile({ name: "Rami", powerLevel: "Admin/Trainer", isAdmin: true });
         }
       }
     });
@@ -180,7 +189,7 @@ export default function App() {
 
   const handleSendMessage = async () => {
     if (!inputText.trim() || !userId) return;
-    const text = inputText;
+    const text = inputText.toLowerCase();
     setInputText("");
     
     try {
@@ -196,24 +205,35 @@ export default function App() {
       logInteraction("message_sent", { text });
 
       setIsTyping(true);
-      const [orders, sales, dnaLogs] = await Promise.all([
-        getDocs(query(collection(db, getCollectionPath("orders")), orderBy("timestamp", "desc"), limit(5))),
+
+      // Upgrade: Real-time Data Fetching for Orders (Eliminate Hallucinations)
+      let ordersData: any[] = [];
+      if (text.includes("orders") || text.includes("הזמנות")) {
+         const ordersSnap = await getDocs(query(
+           collection(db, getCollectionPath("orders")), 
+           orderBy("timestamp", "desc"), 
+           limit(20)
+         ));
+         ordersData = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      }
+
+      const [sales, dnaLogs] = await Promise.all([
         getDocs(query(collection(db, getCollectionPath("sales")), orderBy("timestamp", "desc"), limit(5))),
         getDocs(query(collection(db, getCollectionPath("ai_logs")), where("type", "==", "dna_training"), orderBy("timestamp", "desc"), limit(1)))
       ]);
 
       const context = {
-        orders: orders.docs.map(d => d.data()),
+        orders: ordersData,
         sales: sales.docs.map(d => d.data()),
         dnaTraining: dnaLogs.docs.length > 0 ? dnaLogs.docs[0].data().content : null,
         deviceId,
         location,
         userProfile,
-        isCeoActive: userProfile?.powerLevel === "מנכ״ל" || userProfile?.name?.includes("הראל")
+        isCeoActive: userProfile?.isCeo || text.includes("הראל")
       };
 
       let noaText = "";
-      if (text.includes("הראל") && (text.includes("מנכ") || text.includes("CEO"))) {
+      if (text.includes("הראל") && (text.includes("מנכ") || text.includes("ceo"))) {
         // Inject Personal DNA into Harel's profile
         await updateDoc(doc(db, getCollectionPath("users"), userId), {
           powerLevel: "מנכ״ל",
@@ -235,7 +255,7 @@ export default function App() {
           <div class="grid grid-cols-2 gap-3 mt-4">
             <div class="bg-emerald-950/50 p-3 rounded-2xl border border-emerald-500/30">
                <p class="text-[10px] uppercase font-black opacity-60">Succession Node</p>
-               <p class="font-bold">Active: Family Legacy</p>
+               <p class="font-bold">Active: Family Unity</p>
             </div>
             <div class="bg-emerald-950/50 p-3 rounded-2xl border border-emerald-500/30">
                <p class="text-[10px] uppercase font-black opacity-60">Command Status</p>
