@@ -5,15 +5,20 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Generic rule for public data collections under the specific App ID
-    match /artifacts/ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e/public/data/{collectionName}/{docId} {
+    // Shared rule for Saban Dual-Bridge Architecture
+    match /artifacts/{appId}/public/data/{collectionName} {
       function isSignedIn() {
         return request.auth != null;
       }
+      function isSaban() {
+        return appId == "ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e" || appId == "saban-ai-drive";
+      }
       
-      // WhatsApp Clone: For simplicity, allow authenticated users to read/write shared data
-      // In production, we'd further restrict write access or filter reads by user context.
-      allow read, write: if isSignedIn();
+      allow read, write: if isSignedIn() && isSaban();
+
+      match /{docId} {
+        allow read, write: if isSignedIn() && isSaban();
+      }
     }
   }
 }

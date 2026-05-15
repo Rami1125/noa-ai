@@ -374,12 +374,13 @@ export default function App() {
           </header>
 
           <main className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar bg-[#e5ddd5] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-repeat">
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence>
               {messages.map((msg) => (
                 <motion.div 
                   key={msg.id} 
                   initial={{ opacity: 0, y: 10 }} 
                   animate={{ opacity: 1, y: 0 }} 
+                  layout
                   className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div className={`shadow-sm relative mb-2 
@@ -387,7 +388,7 @@ export default function App() {
                     
                     {msg.sender === "noa" ? (
                       <div className="noa-render p-0 overflow-x-hidden text-[18px]">
-                        <div key={`content-${msg.id}`} dangerouslySetInnerHTML={{ __html: msg.text }} />
+                        <div dangerouslySetInnerHTML={{ __html: msg.text }} />
                       </div>
                     ) : (
                       <div className="text-[16px] leading-relaxed font-medium">{msg.text}</div>
