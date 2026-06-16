@@ -4,25 +4,9 @@ import {
   Send, 
   Paperclip, 
   Smile, 
-  Search,
-  MoreVertical, 
-  Phone, 
-  Video, 
-  CheckCheck,
   Shield,
-  ShieldAlert,
-  Trash2,
-  Forward,
   X,
-  CheckCircle2,
-  FlaskConical,
-  ChevronLeft,
-  ChevronRight,
-  Settings,
-  Activity,
-  Box,
-  Truck,
-  FileText
+  ChevronLeft
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
@@ -33,17 +17,12 @@ import {
   addDoc, 
   serverTimestamp, 
   doc,
-  updateDoc,
-  setDoc,
-  getDocs,
-  limit,
-  where
+  setDoc
 } from "firebase/firestore";
-import { dbIntelligence, dbDrive, initAuth } from "./lib/firebase";
+import { dbIntelligence, initAuth, INTELLIGENCE_APP_ID } from "./lib/firebase";
 import { getNoaResponse } from "./services/geminiService";
 import { format } from "date-fns";
 
-const INTELLIGENCE_APP_ID = "ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e";
 const DRIVE_APP_ID = "saban-ai-drive";
 const NOA_AVATAR = "https://i.postimg.cc/qqLm9M5t/Gemini-Generated-Image-gmd5k7gmd5k7gmd5.png";
 
@@ -70,8 +49,6 @@ export default function App() {
   const [view, setView] = useState<"chat" | "admin">(() => (localStorage.getItem("saban_view") as any) || "chat");
   const [isAdminMinimized, setIsAdminMinimized] = useState(false);
   const [locationAlertActive, setLocationAlertActive] = useState(false);
-  const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isSimulationMode, setIsSimulationMode] = useState(() => localStorage.getItem("saban_simulation_mode") === "true");
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -116,7 +93,6 @@ export default function App() {
   }, []);
 
   const getIntelligencePath = (name: string) => `artifacts/${INTELLIGENCE_APP_ID}/public/data/${name}`;
-  const getDrivePath = (name: string) => `artifacts/${DRIVE_APP_ID}/public/data/${name}`;
 
   // User Profile Listener (Operational Logic)
   useEffect(() => {
@@ -174,7 +150,6 @@ export default function App() {
     const results: any[] = [];
     for (const call of calls) {
       console.log(`Executing Tool: ${call.name}`, call.args);
-      
       let response = { status: "success", data: {} };
       
       switch (call.name) {
@@ -193,7 +168,6 @@ export default function App() {
         default:
           response.data = { message: "Action logged in SabanOS" };
       }
-      
       results.push({ name: call.name, response });
     }
     return results;
@@ -225,15 +199,10 @@ export default function App() {
       };
 
       const aiResponse = await getNoaResponse([...messages, { text, sender: "user" } as Message], context);
-      
       let finalNoaText = aiResponse.text;
 
-      // Handle function calling results visually if needed
       if (aiResponse.functionCalls) {
-        const toolResults = await executeTools(aiResponse.functionCalls);
-        // Note: In V31 we don't necessarily need a second turn if the system is "Saban-Precision" 
-        // We can just append the operational result to the AI text or let Noa speak if we did a 2nd turn.
-        // For simplicity, we just log and show the AI's first response which usually knows it called the tool.
+        await executeTools(aiResponse.functionCalls);
       }
 
       await addDoc(collection(dbIntelligence, getIntelligencePath("chats")), {
@@ -266,13 +235,11 @@ export default function App() {
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-slate-900 font-['Heebo'] selection:bg-[#C5A059]/30 rtl" dir="rtl">
-      {/* Simulation HUD */}
       {isSimulationMode && (
         <div className="fixed top-0 inset-x-0 h-1 bg-amber-500 z-[100] shadow-[0_0_15px_rgba(245,158,11,0.5)]" />
       )}
 
       <div className="w-full h-full flex flex-col bg-[#EDEDED]">
-        {/* Compact Header */}
         <header className="bg-[#1e293b] text-white h-16 md:h-20 flex items-center px-4 md:px-6 justify-between shadow-2xl z-30 flex-shrink-0">
            <div className="flex items-center gap-3">
               <div className="relative group cursor-pointer" onClick={() => setView("admin")}>
@@ -299,7 +266,6 @@ export default function App() {
            </div>
         </header>
 
-        {/* Chat Stage */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-[#e5ddd5] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] custom-scrollbar">
            <AnimatePresence>
               {messages.map((msg) => (
@@ -309,7 +275,6 @@ export default function App() {
                   animate={{ opacity: 1, scale: 1 }}
                   className={`flex gap-3 ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"}`}
                 >
-                   {/* 32px WhatsApp Circular Avatars */}
                    <img 
                       src={msg.sender === "noa" ? NOA_AVATAR : (userProfile?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`)} 
                       className="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover mt-auto" 
@@ -324,7 +289,6 @@ export default function App() {
                       )}
                       <div className="flex items-center justify-end gap-1 mt-1 opacity-40 text-[9px] font-black">
                          <span>{msg.timestamp?.toDate ? format(msg.timestamp.toDate(), "HH:mm") : "--:--"}</span>
-                         {msg.sender === "user" && <CheckCheck size={12} className={msg.status === "seen" ? "text-blue-600" : ""} />}
                       </div>
                    </div>
                 </motion.div>
@@ -340,7 +304,6 @@ export default function App() {
            <div ref={scrollRef} className="h-4 w-full" />
         </main>
 
-        {/* Input Dock */}
         <footer className="bg-white/95 backdrop-blur-xl p-4 flex items-center gap-3 border-t border-slate-200 shadow-inner">
            <div className="hidden sm:flex gap-3 text-slate-400">
               <Smile className="hover:text-[#C5A059] cursor-pointer transition-colors" />
@@ -363,7 +326,6 @@ export default function App() {
         </footer>
       </div>
 
-      {/* Admin Central - Integrated Under Shield */}
       <AnimatePresence>
         {view === "admin" && (
           <>
@@ -391,6 +353,7 @@ export default function App() {
                <AdminDashboard 
                  userId={userId || ""} 
                  userProfile={userProfile}
+                 specId={INTELLIGENCE_APP_ID}
                  onBack={() => setView("chat")} 
                  locationAlertActive={locationAlertActive}
                  onDismissAlert={() => setLocationAlertActive(false)}
@@ -401,20 +364,6 @@ export default function App() {
           </>
         )}
       </AnimatePresence>
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        
-        .noa-render table { width: 100%; border-collapse: collapse; margin: 12px 0; background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; font-size: 14px; }
-        .noa-render th, .noa-render td { padding: 14px; text-align: right; border-bottom: 1px solid #f1f5f9; }
-        .noa-render th { background: #1e293b; color: #C5A059; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; }
-        .noa-render .card { background: white; border: 1px solid #e2e8f0; padding: 24px; border-radius: 32px; margin: 16px 0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
-        .noa-render h3 { color: #1e293b; font-weight: 900; margin-bottom: 12px; font-size: 20px; letter-spacing: -0.02em; }
-        .noa-render b { color: #C5A059; }
-        .noa-render .metric { display: flex; align-items: center; gap: 8px; font-family: monospace; font-size: 12px; color: #64748b; }
-      `}</style>
     </div>
   );
 }
