@@ -6,13 +6,11 @@ import firebaseConfig from "../../firebase-applet-config.json";
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
-// Intelligence DB (Dynamic from AI Studio config instead of hardcoded)
-export const INTELLIGENCE_APP_ID = firebaseConfig.firestoreDatabaseId;
-export const dbIntelligence = getFirestore(app, INTELLIGENCE_APP_ID);
+// Intelligence DB (Primary AI Studio DB for DNA, Chats, History)
+export const dbIntelligence = getFirestore(app, "ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e");
 
 // Drive DB (Real-time Orders, Inventory, Supplier Lists)
-export const DRIVE_APP_ID = "saban-ai-drive";
-export const dbDrive = getFirestore(app, DRIVE_APP_ID);
+export const dbDrive = getFirestore(app, "saban-ai-drive");
 
 // Export 'db' as dbIntelligence for backward compatibility
 export const db = dbIntelligence;
