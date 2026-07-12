@@ -35,7 +35,7 @@ import {
   deleteDoc,
   updateDoc
 } from "firebase/firestore";
-import { dbIntelligence as db, dbDrive } from "../lib/firebase";
+import { db } from "../lib/firebase";
 import { motion, AnimatePresence } from "motion/react";
 import { format } from "date-fns";
 import { getNoaResponse } from "../services/geminiService";
