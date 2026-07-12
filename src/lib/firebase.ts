@@ -1,28 +1,27 @@
-import { initializeApp } from "firebase/app";
-import { getAuth, signInAnonymously } from "firebase/auth";
+/**
+ * ==========================================
+ * src/lib/firebase.ts
+ * שכבת התקשורת למסד הנתונים Whatsapp Firebase
+ * ==========================================
+ */
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import firebaseConfig from "../../firebase-applet-config.json";
+import { getDatabase } from "firebase/database";
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-
-// Intelligence DB (Primary AI Studio DB for DNA, Chats, History)
-export const dbIntelligence = getFirestore(app, "ai-studio-cc5d2687-b402-4b97-b808-5ba700689e0e");
-
-// Drive DB (Real-time Orders, Inventory, Supplier Lists)
-export const dbDrive = getFirestore(app, "saban-ai-drive");
-
-// Export 'db' as dbIntelligence for backward compatibility
-export const db = dbIntelligence;
-
-export const initAuth = async () => {
-  try {
-    if (!auth.currentUser) {
-      await signInAnonymously(auth);
-    }
-    return auth.currentUser;
-  } catch (error) {
-    console.error("Firebase Auth Error:", error);
-    return null;
-  }
+const firebaseConfig = {
+  apiKey: "AIzaSyAg1mkCCOs1A7inc4HfPmTND2t26zbgf9A",
+  authDomain: "whatsapp-8ffd1.firebaseapp.com",
+  databaseURL: "https://whatsapp-8ffd1-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "whatsapp-8ffd1",
+  storageBucket: "whatsapp-8ffd1.firebasestorage.app",
+  messagingSenderId: "248003330797",
+  appId: "1:248003330797:web:db93f4c5b223bfa647c2e4",
+  measurementId: "G-D3DHQD4QRD"
 };
+
+// אתחול חכם למניעת קריסות (Singleton Pattern) - מונע אתחול כפול ב-Hot Reload
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+
+// חשיפת הממשקים לעבודה בשאר חלקי האפליקציה
+export const db = getFirestore(app);     // עבור מסד נתונים Cloud Firestore
+export const rtdb = getDatabase(app);    // עבור מסד נתונים Realtime Database
