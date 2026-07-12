@@ -19,9 +19,10 @@ const firebaseConfig = {
   measurementId: "G-D3DHQD4QRD"
 };
 
-// אתחול חכם למניעת קריסות (Singleton Pattern) - מונע אתחול כפול ב-Hot Reload
+// אתחול חכם למניעת קריסות (Singleton Pattern)
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// חשיפת הממשקים לעבודה בשאר חלקי האפליקציה
-export const db = getFirestore(app);     // עבור מסד נתונים Cloud Firestore
-export const rtdb = getDatabase(app);    // עבור מסד נתונים Realtime Database
+// חשיפת הממשקים בשמות שהמערכת שלך כבר מחפשת
+export const dbIntelligence = getFirestore(app); 
+export const dbDrive = getFirestore(app); // נשתמש באותו מופע אם הכל יושב באותו פרויקט
+export const rtdb = getDatabase(app);
