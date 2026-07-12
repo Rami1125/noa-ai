@@ -1,12 +1,5 @@
-/**
- * ==========================================
- * src/lib/firebase.ts
- * שכבת התקשורת למסד הנתונים Whatsapp Firebase
- * ==========================================
- */
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAg1mkCCOs1A7inc4HfPmTND2t26zbgf9A",
@@ -19,10 +12,8 @@ const firebaseConfig = {
   measurementId: "G-D3DHQD4QRD"
 };
 
-// אתחול חכם למניעת קריסות (Singleton Pattern)
+// אתחול האפליקציה
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// חשיפת הממשקים בשמות שהמערכת שלך כבר מחפשת
-export const dbIntelligence = getFirestore(app); 
-export const dbDrive = getFirestore(app); // נשתמש באותו מופע אם הכל יושב באותו פרויקט
-export const rtdb = getDatabase(app);
+// השורה הקריטית ש-Vercel מחפש:
+export const db = getFirestore(app);
